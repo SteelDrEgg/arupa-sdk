@@ -51,5 +51,46 @@ shared HTTP implementation as `arupagrpc.HTTPPlugin`. Compile the plugin for
 `wasip1` and export it with:
 
 ```go
-wasm.RegisterPlugin(plugin)
+wasm.Register(plugin)
+```
+
+## Socket events
+
+Socket namespaces remain host declarations in `arupa.Registration`. To listen
+for forwarded events, create one event bus and register functions on it:
+
+```go
+events := arupa.NewSocketListener()
+_ = events.On("message", func(ctx context.Context, event arupa.SocketEvent, emit arupa.Emitter) error {
+    return arupa.EmitJSON(emit, event.Namespace, event.SocketID, "reply", "received")
+})
+
+plugin.Events = events
+```
+
+Every `EmitJSON` performed while handling an event is returned to the host in
+that event's `SocketEventReply`, for both gRPC and WASM plugins.
+
+For a gRPC plugin, emits can also be sent after event handling, including from
+background work. `HTTPPlugin.Register` establishes the callback internally:
+
+```go
+_ = plugin.EmitJSON(ctx, "/chat", "", "notice", "server is ready")
+```
+
+## Plugin messages
+
+Plugin messages use one listener per request/reply topic:
+
+```go
+messages := arupa.NewMessageListener()
+_ = messages.On("cache.invalidate", func(ctx context.Context, message arupa.IncomingMessage) (string, error) {
+    return "ok", nil
+})
+
+plugin.Messages = messages
+
+reply, err := plugin.SendJSON(ctx, "cache", "cache.invalidate", map[string]string{
+    "key": "user:42",
+})
 ```

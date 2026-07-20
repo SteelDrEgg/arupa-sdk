@@ -28,21 +28,64 @@ type HTTPPlugin struct {
 
 	Registration arupa.Registration
 	Handler      http.Handler
+	Events       *arupa.SocketListener
+	Messages     *arupa.MessageListener
+	host         hostState
 }
 
 var _ pluginv1.PluginServer = (*HTTPPlugin)(nil)
 
-func (p *HTTPPlugin) Register(context.Context, *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
-	return RegistrationReply(p.Registration)
+func (p *HTTPPlugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+	reply, err := RegistrationReply(p.Registration)
+	if err != nil {
+		return nil, err
+	}
+	if err := p.configureHost(ctx, request); err != nil {
+		return nil, err
+	}
+	return reply, nil
 }
 
 func (p *HTTPPlugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
 	return ServeHTTP(ctx, request, p.Handler)
 }
 
+// HandleSocketEvent dispatches a host-forwarded event to registered listeners.
+func (p *HTTPPlugin) HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent) (*pluginv1.SocketEventReply, error) {
+	return HandleSocketEvent(ctx, event, p.Events)
+}
+
+// HandlePluginMessage dispatches a host-forwarded plugin message to the
+// registered message listener.
+func (p *HTTPPlugin) HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage) (*pluginv1.PluginMessageReply, error) {
+	return HandlePluginMessage(ctx, message, p.Messages)
+}
+
 var httpBinding = arupa.HTTPBinding[pluginv1.HTTPRequest, pluginv1.HTTPResponse]{
 	Request:  requestFromProto,
 	Response: responseToProto,
+}
+
+var socketBinding = arupa.SocketBinding[pluginv1.SocketEvent, pluginv1.SocketEventReply]{
+	Event: socketEventFromProto,
+	Reply: socketReplyToProto,
+}
+
+var messageBinding = arupa.MessageBinding[pluginv1.PluginMessage, pluginv1.PluginMessageReply]{
+	Message: messageFromProto,
+	Reply:   messageReplyToProto,
+}
+
+// HandleSocketEvent converts generated gRPC event values at the boundary and
+// dispatches them through the shared event listener registry.
+func HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent, events *arupa.SocketListener) (*pluginv1.SocketEventReply, error) {
+	return socketBinding.HandleSocketEvent(ctx, event, events)
+}
+
+// HandlePluginMessage converts generated gRPC values at the boundary and
+// dispatches them through the shared message listener.
+func HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage, listener *arupa.MessageListener) (*pluginv1.PluginMessageReply, error) {
+	return messageBinding.HandlePluginMessage(ctx, message, listener)
 }
 
 var registrationBinding = arupa.RegistrationBinding[pluginv1.HTTPRoute, pluginv1.SocketNamespace, pluginv1.StaticMount, pluginv1.RegisterReply]{
@@ -90,6 +133,45 @@ func responseToProto(response arupa.HTTPResponse) *pluginv1.HTTPResponse {
 		}
 	}
 	return &pluginv1.HTTPResponse{Status: int32(response.Status), Headers: headers, Body: response.Body}
+}
+
+func socketEventFromProto(event *pluginv1.SocketEvent) arupa.SocketEvent {
+	var user *arupa.User
+	if source := event.GetUser(); source != nil {
+		user = &arupa.User{Username: source.GetUsername(), Groups: append([]string(nil), source.GetGroups()...)}
+	}
+	return arupa.SocketEvent{
+		Namespace: event.GetNamespace(),
+		Event:     event.GetEvent(),
+		SocketID:  event.GetSocketId(),
+		User:      user,
+		Payload:   append([]byte(nil), event.GetPayload()...),
+	}
+}
+
+func socketReplyToProto(emits []arupa.EmitInstruction) *pluginv1.SocketEventReply {
+	reply := &pluginv1.SocketEventReply{Emits: make([]*pluginv1.EmitInstruction, 0, len(emits))}
+	for _, emit := range emits {
+		reply.Emits = append(reply.Emits, &pluginv1.EmitInstruction{
+			Namespace: emit.Namespace,
+			Target:    emit.Target,
+			Event:     emit.Event,
+			Payload:   append([]byte(nil), emit.Payload...),
+		})
+	}
+	return reply
+}
+
+func messageFromProto(message *pluginv1.PluginMessage) arupa.IncomingMessage {
+	return arupa.IncomingMessage{
+		Source:  message.GetSource(),
+		Topic:   message.GetTopic(),
+		Payload: append([]byte(nil), message.GetPayload()...),
+	}
+}
+
+func messageReplyToProto(reply string) *pluginv1.PluginMessageReply {
+	return &pluginv1.PluginMessageReply{Message: reply}
 }
 
 func accessPolicy(policy arupa.AccessPolicy) *pluginv1.AccessPolicy {
