@@ -21,9 +21,9 @@ func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.
 	return httpBinding.ServeHTTP(ctx, request, handler)
 }
 
-// HTTPPlugin is an optional WASM Plugin implementation around a normal
+// Plugin is an optional WASM Plugin implementation around a normal
 // http.Handler. It adds no framework routing.
-type HTTPPlugin struct {
+type Plugin struct {
 	Registration arupa.Registration
 	Handler      http.Handler
 	Events       *arupa.SocketListener
@@ -31,14 +31,14 @@ type HTTPPlugin struct {
 	sender       arupa.MessageSender
 }
 
-var _ pluginv1.Plugin = (*HTTPPlugin)(nil)
+var _ pluginv1.Plugin = (*Plugin)(nil)
 
-func (p *HTTPPlugin) Register(context.Context, *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+func (p *Plugin) Register(context.Context, *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	p.sender = platformMessageSender()
 	return RegistrationReply(p.Registration)
 }
 
-func (p *HTTPPlugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
+func (p *Plugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
 	return ServeHTTP(ctx, request, p.Handler)
 }
 
@@ -78,18 +78,18 @@ var registrationBinding = arupa.RegistrationBinding[pluginv1.HTTPRoute, pluginv1
 }
 
 // HandleSocketEvent dispatches a host-forwarded event to registered listeners.
-func (p *HTTPPlugin) HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent) (*pluginv1.SocketEventReply, error) {
+func (p *Plugin) HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent) (*pluginv1.SocketEventReply, error) {
 	return HandleSocketEvent(ctx, event, p.Events)
 }
 
 // HandlePluginMessage dispatches a host-forwarded plugin message to the
 // registered message listener.
-func (p *HTTPPlugin) HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage) (*pluginv1.PluginMessageReply, error) {
+func (p *Plugin) HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage) (*pluginv1.PluginMessageReply, error) {
 	return HandlePluginMessage(ctx, message, p.Messages)
 }
 
 // SendMessage sends a request/reply message to another registered plugin.
-func (p *HTTPPlugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
+func (p *Plugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
 	if p.sender == nil {
 		return "", fmt.Errorf("arupa/wasm: host messaging is unavailable before registration")
 	}
@@ -97,7 +97,7 @@ func (p *HTTPPlugin) SendMessage(ctx context.Context, message arupa.OutgoingMess
 }
 
 // SendJSON encodes payload as JSON, then delegates to SendMessage.
-func (p *HTTPPlugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
+func (p *Plugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
 	return arupa.SendJSON(ctx, p, target, topic, payload)
 }
 

@@ -21,9 +21,9 @@ func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.
 	return httpBinding.ServeHTTP(ctx, request, handler)
 }
 
-// HTTPPlugin is an optional gRPC PluginServer wrapper around a normal
+// Plugin is an optional gRPC PluginServer wrapper around a normal
 // http.Handler. It adds no framework routing.
-type HTTPPlugin struct {
+type Plugin struct {
 	pluginv1.UnimplementedPluginServer
 
 	Registration arupa.Registration
@@ -33,9 +33,9 @@ type HTTPPlugin struct {
 	host         hostState
 }
 
-var _ pluginv1.PluginServer = (*HTTPPlugin)(nil)
+var _ pluginv1.PluginServer = (*Plugin)(nil)
 
-func (p *HTTPPlugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	reply, err := RegistrationReply(p.Registration)
 	if err != nil {
 		return nil, err
@@ -46,18 +46,18 @@ func (p *HTTPPlugin) Register(ctx context.Context, request *pluginv1.RegisterReq
 	return reply, nil
 }
 
-func (p *HTTPPlugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
+func (p *Plugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
 	return ServeHTTP(ctx, request, p.Handler)
 }
 
 // HandleSocketEvent dispatches a host-forwarded event to registered listeners.
-func (p *HTTPPlugin) HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent) (*pluginv1.SocketEventReply, error) {
+func (p *Plugin) HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent) (*pluginv1.SocketEventReply, error) {
 	return HandleSocketEvent(ctx, event, p.Events)
 }
 
 // HandlePluginMessage dispatches a host-forwarded plugin message to the
 // registered message listener.
-func (p *HTTPPlugin) HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage) (*pluginv1.PluginMessageReply, error) {
+func (p *Plugin) HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage) (*pluginv1.PluginMessageReply, error) {
 	return HandlePluginMessage(ctx, message, p.Messages)
 }
 

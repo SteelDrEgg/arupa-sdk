@@ -124,7 +124,7 @@ func (s *hostState) close() error {
 	return current.close()
 }
 
-func (p *HTTPPlugin) configureHost(ctx context.Context, request *pluginv1.RegisterRequest) error {
+func (p *Plugin) configureHost(ctx context.Context, request *pluginv1.RegisterRequest) error {
 	if request == nil {
 		return fmt.Errorf("arupa/grpc: register request is nil")
 	}
@@ -144,13 +144,13 @@ func (p *HTTPPlugin) configureHost(ctx context.Context, request *pluginv1.Regist
 
 // Emit sends an instruction through the host callback. It is available after
 // Register has completed successfully and can be called from background work.
-func (p *HTTPPlugin) Emit(ctx context.Context, instruction arupa.EmitInstruction) error {
+func (p *Plugin) Emit(ctx context.Context, instruction arupa.EmitInstruction) error {
 	return p.host.current().emit(ctx, instruction)
 }
 
 // EmitJSON encodes args as Socket.IO event arguments and sends them through
 // the host callback.
-func (p *HTTPPlugin) EmitJSON(ctx context.Context, namespace, target, event string, args ...any) error {
+func (p *Plugin) EmitJSON(ctx context.Context, namespace, target, event string, args ...any) error {
 	instruction, err := arupa.NewEmitJSON(namespace, target, event, args...)
 	if err != nil {
 		return err
@@ -159,16 +159,16 @@ func (p *HTTPPlugin) EmitJSON(ctx context.Context, namespace, target, event stri
 }
 
 // SendMessage sends a request/reply message to another registered plugin.
-func (p *HTTPPlugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
+func (p *Plugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
 	return p.host.current().sendMessage(ctx, message)
 }
 
 // SendJSON encodes payload as JSON, then delegates to SendMessage.
-func (p *HTTPPlugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
+func (p *Plugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
 	return arupa.SendJSON(ctx, p, target, topic, payload)
 }
 
 // Close releases the gRPC host callback connection.
-func (p *HTTPPlugin) Close() error {
+func (p *Plugin) Close() error {
 	return p.host.close()
 }

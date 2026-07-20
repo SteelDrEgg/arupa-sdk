@@ -15,7 +15,7 @@ the adapter unchanged.
 app := gin.Default()
 app.GET("/api/users/:id", getUser)
 
-plugin := &arupagrpc.HTTPPlugin{
+plugin := &arupagrpc.Plugin{
     Registration: arupa.Registration{
         Name:    "users",
         Version: "1.0.0",
@@ -46,8 +46,8 @@ func (p *Plugin) HandleHTTP(ctx context.Context, req *pluginv1.HTTPRequest) (*pl
 ## WASM
 
 The generated WASM ABI is in `gen/wasm/proto`; its thin protocol binding is in
-the `wasm` package. `wasm.HTTPPlugin` uses the same `arupa.Registration` and
-shared HTTP implementation as `arupagrpc.HTTPPlugin`. Compile the plugin for
+the `wasm` package. `wasm.Plugin` uses the same `arupa.Registration` and
+shared HTTP implementation as `arupagrpc.Plugin`. Compile the plugin for
 `wasip1` and export it with:
 
 ```go
@@ -72,7 +72,7 @@ Every `EmitJSON` performed while handling an event is returned to the host in
 that event's `SocketEventReply`, for both gRPC and WASM plugins.
 
 For a gRPC plugin, emits can also be sent after event handling, including from
-background work. `HTTPPlugin.Register` establishes the callback internally:
+background work. `Plugin.Register` establishes the callback internally:
 
 ```go
 _ = plugin.EmitJSON(ctx, "/chat", "", "notice", "server is ready")
