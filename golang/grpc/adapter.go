@@ -1,0 +1,97 @@
+// Package grpc adapts the framework-neutral Arupa SDK to gRPC protocol types.
+package grpc
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/SteelDrEgg/arupa-sdk/golang"
+	pluginv1 "github.com/SteelDrEgg/arupa-sdk/golang/gen/grpc"
+)
+
+// RegistrationReply converts an SDK registration declaration to the generated
+// gRPC protocol response.
+func RegistrationReply(registration arupa.Registration) (*pluginv1.RegisterReply, error) {
+	return registrationBinding.RegistrationReply(registration)
+}
+
+// ServeHTTP converts generated gRPC protocol values at the boundary and uses
+// the shared framework-neutral HTTP adapter for all handler invocation.
+func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.Handler) (*pluginv1.HTTPResponse, error) {
+	return httpBinding.ServeHTTP(ctx, request, handler)
+}
+
+// HTTPPlugin is an optional gRPC PluginServer wrapper around a normal
+// http.Handler. It adds no framework routing.
+type HTTPPlugin struct {
+	pluginv1.UnimplementedPluginServer
+
+	Registration arupa.Registration
+	Handler      http.Handler
+}
+
+var _ pluginv1.PluginServer = (*HTTPPlugin)(nil)
+
+func (p *HTTPPlugin) Register(context.Context, *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+	return RegistrationReply(p.Registration)
+}
+
+func (p *HTTPPlugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
+	return ServeHTTP(ctx, request, p.Handler)
+}
+
+var httpBinding = arupa.HTTPBinding[pluginv1.HTTPRequest, pluginv1.HTTPResponse]{
+	Request:  requestFromProto,
+	Response: responseToProto,
+}
+
+var registrationBinding = arupa.RegistrationBinding[pluginv1.HTTPRoute, pluginv1.SocketNamespace, pluginv1.StaticMount, pluginv1.RegisterReply]{
+	Route: func(route arupa.HTTPRoute) *pluginv1.HTTPRoute {
+		return &pluginv1.HTTPRoute{Method: route.Method, Pattern: route.Pattern, Access: accessPolicy(route.Access)}
+	},
+	Namespace: func(namespace arupa.SocketNamespace) *pluginv1.SocketNamespace {
+		eventAccess := make(map[string]*pluginv1.AccessPolicy, len(namespace.EventAccess))
+		for event, policy := range namespace.EventAccess {
+			eventAccess[event] = accessPolicy(policy)
+		}
+		return &pluginv1.SocketNamespace{Name: namespace.Name, Events: append([]string(nil), namespace.Events...), Access: accessPolicy(namespace.Access), EventAccess: eventAccess}
+	},
+	Mount: func(mount arupa.StaticMount) *pluginv1.StaticMount {
+		return &pluginv1.StaticMount{Prefix: mount.Prefix, Directory: mount.Directory, Access: accessPolicy(mount.Access)}
+	},
+	Reply: func(name, version string, routes []*pluginv1.HTTPRoute, namespaces []*pluginv1.SocketNamespace, mounts []*pluginv1.StaticMount) *pluginv1.RegisterReply {
+		return &pluginv1.RegisterReply{Name: name, Version: version, HttpRoutes: routes, SocketNamespaces: namespaces, StaticMounts: mounts}
+	},
+}
+
+func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {
+	if request == nil {
+		return arupa.HTTPRequest{}
+	}
+	headers := make(http.Header, len(request.GetHeaders()))
+	for key, value := range request.GetHeaders() {
+		headers.Set(key, value)
+	}
+	return arupa.HTTPRequest{
+		Method:     request.GetMethod(),
+		Path:       request.GetPath(),
+		Query:      request.GetQuery(),
+		Headers:    headers,
+		Body:       request.GetBody(),
+		RemoteAddr: request.GetRemoteAddr(),
+	}
+}
+
+func responseToProto(response arupa.HTTPResponse) *pluginv1.HTTPResponse {
+	headers := make(map[string]string, len(response.Headers))
+	for key, values := range response.Headers {
+		if len(values) > 0 {
+			headers[key] = values[0]
+		}
+	}
+	return &pluginv1.HTTPResponse{Status: int32(response.Status), Headers: headers, Body: response.Body}
+}
+
+func accessPolicy(policy arupa.AccessPolicy) *pluginv1.AccessPolicy {
+	return &pluginv1.AccessPolicy{RequireAuth: policy.RequireAuth, Groups: append([]string(nil), policy.Groups...)}
+}
