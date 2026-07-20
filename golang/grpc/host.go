@@ -16,6 +16,10 @@ import (
 const hostCallbackTokenMetadata = "x-panel-token"
 
 type emitClient interface {
+	KVGet(context.Context, *pluginv1.KVGetRequest, ...googlegrpc.CallOption) (*pluginv1.KVGetReply, error)
+	KVSet(context.Context, *pluginv1.KVSetRequest, ...googlegrpc.CallOption) (*pluginv1.KVSetReply, error)
+	KVDelete(context.Context, *pluginv1.KVDeleteRequest, ...googlegrpc.CallOption) (*pluginv1.KVDeleteReply, error)
+	KVList(context.Context, *pluginv1.KVListRequest, ...googlegrpc.CallOption) (*pluginv1.KVListReply, error)
 	Emit(context.Context, *pluginv1.EmitInstruction, ...googlegrpc.CallOption) (*pluginv1.EmitReply, error)
 	SendPluginMessage(context.Context, *pluginv1.PluginMessage, ...googlegrpc.CallOption) (*pluginv1.PluginMessageReply, error)
 }
@@ -88,6 +92,94 @@ func (h *host) sendMessage(ctx context.Context, message arupa.OutgoingMessage) (
 		return "", fmt.Errorf("arupa/grpc: send plugin message: %s", message)
 	}
 	return reply.GetMessage(), nil
+}
+
+func (h *host) kvGet(ctx context.Context, namespace, key string) ([]byte, bool, error) {
+	if err := validateKVRequest(namespace, key); err != nil {
+		return nil, false, err
+	}
+	if h == nil || h.client == nil {
+		return nil, false, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	reply, err := h.client.KVGet(ctx, &pluginv1.KVGetRequest{Namespace: namespace, Key: key})
+	if err != nil {
+		return nil, false, fmt.Errorf("arupa/grpc: host kv get: %w", err)
+	}
+	return append([]byte(nil), reply.GetValue()...), reply.GetFound(), nil
+}
+
+func (h *host) kvSet(ctx context.Context, namespace, key string, value []byte) error {
+	if err := validateKVRequest(namespace, key); err != nil {
+		return err
+	}
+	if h == nil || h.client == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	reply, err := h.client.KVSet(ctx, &pluginv1.KVSetRequest{Namespace: namespace, Key: key, Value: append([]byte(nil), value...)})
+	if err != nil {
+		return fmt.Errorf("arupa/grpc: host kv set: %w", err)
+	}
+	if message := reply.GetError(); message != "" {
+		return fmt.Errorf("arupa/grpc: host kv set: %s", message)
+	}
+	return nil
+}
+
+func (h *host) kvDelete(ctx context.Context, namespace, key string) error {
+	if err := validateKVRequest(namespace, key); err != nil {
+		return err
+	}
+	if h == nil || h.client == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	reply, err := h.client.KVDelete(ctx, &pluginv1.KVDeleteRequest{Namespace: namespace, Key: key})
+	if err != nil {
+		return fmt.Errorf("arupa/grpc: host kv delete: %w", err)
+	}
+	if message := reply.GetError(); message != "" {
+		return fmt.Errorf("arupa/grpc: host kv delete: %s", message)
+	}
+	return nil
+}
+
+func (h *host) kvList(ctx context.Context, namespace string) ([]string, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("arupa: kv namespace is required")
+	}
+	if h == nil || h.client == nil {
+		return nil, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	reply, err := h.client.KVList(ctx, &pluginv1.KVListRequest{Namespace: namespace})
+	if err != nil {
+		return nil, fmt.Errorf("arupa/grpc: host kv list: %w", err)
+	}
+	return append([]string(nil), reply.GetKeys()...), nil
+}
+
+func validateKVRequest(namespace, key string) error {
+	if namespace == "" {
+		return fmt.Errorf("arupa: kv namespace is required")
+	}
+	if key == "" {
+		return fmt.Errorf("arupa: kv key is required")
+	}
+	return nil
 }
 
 func (h *host) close() error {
@@ -166,6 +258,46 @@ func (p *Plugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage)
 // SendJSON encodes payload as JSON, then delegates to SendMessage.
 func (p *Plugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
 	return arupa.SendJSON(ctx, p, target, topic, payload)
+}
+
+// KV returns a KV store scoped to this plugin's registered name.
+func (p *Plugin) KV() arupa.KVStore {
+	if p == nil {
+		return arupa.NewKVStore(nil, "")
+	}
+	return arupa.NewKVStore(p, p.Registration.Name)
+}
+
+// KVGet reads a value from a non-empty host KV namespace.
+func (p *Plugin) KVGet(ctx context.Context, namespace, key string) ([]byte, bool, error) {
+	if p == nil {
+		return nil, false, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	return p.host.current().kvGet(ctx, namespace, key)
+}
+
+// KVSet writes a value to a non-empty host KV namespace.
+func (p *Plugin) KVSet(ctx context.Context, namespace, key string, value []byte) error {
+	if p == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	return p.host.current().kvSet(ctx, namespace, key, value)
+}
+
+// KVDelete removes a key from a non-empty host KV namespace.
+func (p *Plugin) KVDelete(ctx context.Context, namespace, key string) error {
+	if p == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	return p.host.current().kvDelete(ctx, namespace, key)
+}
+
+// KVList returns the keys in a non-empty host KV namespace.
+func (p *Plugin) KVList(ctx context.Context, namespace string) ([]string, error) {
+	if p == nil {
+		return nil, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	return p.host.current().kvList(ctx, namespace)
 }
 
 // Close releases the gRPC host callback connection.

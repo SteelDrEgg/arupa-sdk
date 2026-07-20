@@ -91,6 +91,21 @@ _ = messages.On("cache.invalidate", func(ctx context.Context, message arupa.Inco
 plugin.Messages = messages
 
 reply, err := plugin.SendJSON(ctx, "cache", "cache.invalidate", map[string]string{
-    "key": "user:42",
+	"key": "user:42",
 })
+```
+
+## KV storage
+
+`Plugin.KV()` scopes storage to the plugin's registered name, so no namespace
+needs to be passed by application code. Empty namespaces are rejected by the
+SDK, including when using the lower-level `KV*` methods.
+
+```go
+store := plugin.KV()
+if err := store.Set(ctx, "user:42", []byte("cached value")); err != nil {
+	return err
+}
+
+value, found, err := store.Get(ctx, "user:42")
 ```

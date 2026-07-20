@@ -29,12 +29,14 @@ type Plugin struct {
 	Events       *arupa.SocketListener
 	Messages     *arupa.MessageListener
 	sender       arupa.MessageSender
+	kvClient     arupa.KVClient
 }
 
 var _ pluginv1.Plugin = (*Plugin)(nil)
 
 func (p *Plugin) Register(context.Context, *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	p.sender = platformMessageSender()
+	p.kvClient = platformKVClient()
 	return RegistrationReply(p.Registration)
 }
 
@@ -99,6 +101,58 @@ func (p *Plugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage)
 // SendJSON encodes payload as JSON, then delegates to SendMessage.
 func (p *Plugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
 	return arupa.SendJSON(ctx, p, target, topic, payload)
+}
+
+// KV returns a KV store scoped to this plugin's registered name.
+func (p *Plugin) KV() arupa.KVStore {
+	if p == nil {
+		return arupa.NewKVStore(nil, "")
+	}
+	return arupa.NewKVStore(p, p.Registration.Name)
+}
+
+// KVGet reads a value from a non-empty host KV namespace.
+func (p *Plugin) KVGet(ctx context.Context, namespace, key string) ([]byte, bool, error) {
+	if err := validateKVRequest(namespace, key); err != nil {
+		return nil, false, err
+	}
+	if p == nil || p.kvClient == nil {
+		return nil, false, fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
+	}
+	return p.kvClient.KVGet(ctx, namespace, key)
+}
+
+// KVSet writes a value to a non-empty host KV namespace.
+func (p *Plugin) KVSet(ctx context.Context, namespace, key string, value []byte) error {
+	if err := validateKVRequest(namespace, key); err != nil {
+		return err
+	}
+	if p == nil || p.kvClient == nil {
+		return fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
+	}
+	return p.kvClient.KVSet(ctx, namespace, key, value)
+}
+
+// KVDelete removes a key from a non-empty host KV namespace.
+func (p *Plugin) KVDelete(ctx context.Context, namespace, key string) error {
+	if err := validateKVRequest(namespace, key); err != nil {
+		return err
+	}
+	if p == nil || p.kvClient == nil {
+		return fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
+	}
+	return p.kvClient.KVDelete(ctx, namespace, key)
+}
+
+// KVList returns the keys in a non-empty host KV namespace.
+func (p *Plugin) KVList(ctx context.Context, namespace string) ([]string, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("arupa: kv namespace is required")
+	}
+	if p == nil || p.kvClient == nil {
+		return nil, fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
+	}
+	return p.kvClient.KVList(ctx, namespace)
 }
 
 func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {
