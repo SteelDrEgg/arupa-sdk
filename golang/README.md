@@ -32,14 +32,37 @@ plugin := &arupagrpc.Plugin{
     Handler: app,
 }
 
-pluginv1.RegisterPluginServer(grpcServer, plugin)
+arupagrpc.Serve(plugin)
 ```
 
-For a custom `PluginServer`, use the adapter directly:
+## Registration hook and Params
+
+`Plugin.OnRegister` runs once for each loaded plugin instance, after the host
+callback and `InitialParams` snapshot are available. Return an error to reject
+registration. Use `Params` when the plugin needs the host's current effective
+configuration; use `InitialParams` when it specifically needs the Params sent
+with this registration request.
+
+```go
+plugin.OnRegister = func(ctx context.Context) error {
+	params, err := plugin.Params(ctx)
+	if err != nil {
+		return err
+	}
+	return service.Configure(params)
+}
+```
+
+For a custom `PluginServer`, use the adapter directly and start it with the
+advanced `ServeServer` entry point:
 
 ```go
 func (p *Plugin) HandleHTTP(ctx context.Context, req *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
     return arupagrpc.ServeHTTP(ctx, req, p.app)
+}
+
+func main() {
+	arupagrpc.ServeServer(&Plugin{})
 }
 ```
 

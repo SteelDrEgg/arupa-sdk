@@ -1,7 +1,18 @@
 // Package arupa contains framework-neutral building blocks for Arupa plugins.
 package arupa
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
+
+// RegisterHook runs while a plugin is registering, after its host capabilities
+// and initial Params snapshot are available. Returning an error rejects the
+// registration.
+//
+// The hook may use the Plugin's Params method to read the current effective
+// host configuration, or InitialParams to read the received startup snapshot.
+type RegisterHook func(context.Context) error
 
 // AccessPolicy is the host-side authorization policy for an ingress route or
 // Socket.IO namespace.

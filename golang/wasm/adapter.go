@@ -24,10 +24,13 @@ func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.
 // Plugin is an optional WASM Plugin implementation around a normal
 // http.Handler. It adds no framework routing.
 type Plugin struct {
-	Registration  arupa.Registration
-	Handler       http.Handler
-	Events        *arupa.SocketListener
-	Messages      *arupa.MessageListener
+	Registration arupa.Registration
+	Handler      http.Handler
+	Events       *arupa.SocketListener
+	Messages     *arupa.MessageListener
+	// OnRegister runs after host callbacks and InitialParams are ready. An
+	// error returned by the hook rejects registration.
+	OnRegister    arupa.RegisterHook
 	sender        arupa.MessageSender
 	kvClient      arupa.KVClient
 	paramsClient  paramsClient
@@ -44,16 +47,25 @@ type paramsClient interface {
 	PatchParams(context.Context, arupa.ParamsPatch) error
 }
 
-func (p *Plugin) Register(_ context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	if request == nil {
 		return nil, fmt.Errorf("arupa/wasm: register request is nil")
+	}
+	reply, err := RegistrationReply(p.Registration)
+	if err != nil {
+		return nil, err
 	}
 	p.sender = platformMessageSender()
 	p.kvClient = platformKVClient()
 	p.paramsClient = platformParamsClient()
 	p.logger = platformLogger()
 	p.initialParams.Store(request.GetParams())
-	return RegistrationReply(p.Registration)
+	if p.OnRegister != nil {
+		if err := p.OnRegister(ctx); err != nil {
+			return nil, fmt.Errorf("arupa/wasm: on register: %w", err)
+		}
+	}
+	return reply, nil
 }
 
 func (p *Plugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {

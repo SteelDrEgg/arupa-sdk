@@ -3,6 +3,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/SteelDrEgg/arupa-sdk/golang"
@@ -26,10 +27,13 @@ func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.
 type Plugin struct {
 	pluginv1.UnimplementedPluginServer
 
-	Registration  arupa.Registration
-	Handler       http.Handler
-	Events        *arupa.SocketListener
-	Messages      *arupa.MessageListener
+	Registration arupa.Registration
+	Handler      http.Handler
+	Events       *arupa.SocketListener
+	Messages     *arupa.MessageListener
+	// OnRegister runs after host callbacks and InitialParams are ready. An
+	// error returned by the hook rejects registration.
+	OnRegister    arupa.RegisterHook
 	host          hostState
 	initialParams arupa.ParamsSnapshot
 }
@@ -47,6 +51,11 @@ func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest
 		return nil, err
 	}
 	p.initialParams.Store(request.GetParams())
+	if p.OnRegister != nil {
+		if err := p.OnRegister(ctx); err != nil {
+			return nil, fmt.Errorf("arupa/grpc: on register: %w", err)
+		}
+	}
 	return reply, nil
 }
 
