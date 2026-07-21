@@ -221,6 +221,29 @@ func (h host) KVList(ctx context.Context, request *KVListRequest) (*KVListReply,
 	return response, nil
 }
 
+//go:wasmimport env get_params
+func _get_params(ptr uint32, size uint32) uint64
+
+func (h host) GetParams(ctx context.Context, request *ParamsGetRequest) (*ParamsGetReply, error) {
+	buf, err := request.MarshalVT()
+	if err != nil {
+		return nil, err
+	}
+	ptr, size := wasm.ByteToPtr(buf)
+	ptrSize := _get_params(ptr, size)
+	wasm.Free(ptr)
+
+	ptr = uint32(ptrSize >> 32)
+	size = uint32(ptrSize)
+	buf = wasm.PtrToByte(ptr, size)
+
+	response := new(ParamsGetReply)
+	if err = response.UnmarshalVT(buf); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
 //go:wasmimport env patch_params
 func _patch_params(ptr uint32, size uint32) uint64
 

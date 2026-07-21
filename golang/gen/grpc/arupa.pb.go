@@ -1252,6 +1252,95 @@ func (x *EmitReply) GetError() string {
 }
 
 // ===== persisted plugin params =====
+// The caller is identified by the authenticated host callback context.
+type ParamsGetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ParamsGetRequest) Reset() {
+	*x = ParamsGetRequest{}
+	mi := &file_proto_arupa_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParamsGetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParamsGetRequest) ProtoMessage() {}
+
+func (x *ParamsGetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ParamsGetRequest.ProtoReflect.Descriptor instead.
+func (*ParamsGetRequest) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{21}
+}
+
+type ParamsGetReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Params        map[string]string      `protobuf:"bytes,1,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ParamsGetReply) Reset() {
+	*x = ParamsGetReply{}
+	mi := &file_proto_arupa_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParamsGetReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParamsGetReply) ProtoMessage() {}
+
+func (x *ParamsGetReply) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ParamsGetReply.ProtoReflect.Descriptor instead.
+func (*ParamsGetReply) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ParamsGetReply) GetParams() map[string]string {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+func (x *ParamsGetReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type ParamsPatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Set           map[string]string      `protobuf:"bytes,1,rep,name=set,proto3" json:"set,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -1262,7 +1351,7 @@ type ParamsPatchRequest struct {
 
 func (x *ParamsPatchRequest) Reset() {
 	*x = ParamsPatchRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[21]
+	mi := &file_proto_arupa_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1274,7 +1363,7 @@ func (x *ParamsPatchRequest) String() string {
 func (*ParamsPatchRequest) ProtoMessage() {}
 
 func (x *ParamsPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[21]
+	mi := &file_proto_arupa_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1287,7 +1376,7 @@ func (x *ParamsPatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParamsPatchRequest.ProtoReflect.Descriptor instead.
 func (*ParamsPatchRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{21}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ParamsPatchRequest) GetSet() map[string]string {
@@ -1313,7 +1402,7 @@ type ParamsPatchReply struct {
 
 func (x *ParamsPatchReply) Reset() {
 	*x = ParamsPatchReply{}
-	mi := &file_proto_arupa_proto_msgTypes[22]
+	mi := &file_proto_arupa_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1325,7 +1414,7 @@ func (x *ParamsPatchReply) String() string {
 func (*ParamsPatchReply) ProtoMessage() {}
 
 func (x *ParamsPatchReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[22]
+	mi := &file_proto_arupa_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1338,7 +1427,7 @@ func (x *ParamsPatchReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParamsPatchReply.ProtoReflect.Descriptor instead.
 func (*ParamsPatchReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{22}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ParamsPatchReply) GetError() string {
@@ -1361,7 +1450,7 @@ type PluginMessage struct {
 
 func (x *PluginMessage) Reset() {
 	*x = PluginMessage{}
-	mi := &file_proto_arupa_proto_msgTypes[23]
+	mi := &file_proto_arupa_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1373,7 +1462,7 @@ func (x *PluginMessage) String() string {
 func (*PluginMessage) ProtoMessage() {}
 
 func (x *PluginMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[23]
+	mi := &file_proto_arupa_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1386,7 +1475,7 @@ func (x *PluginMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PluginMessage.ProtoReflect.Descriptor instead.
 func (*PluginMessage) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{23}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *PluginMessage) GetSource() string {
@@ -1427,7 +1516,7 @@ type PluginMessageReply struct {
 
 func (x *PluginMessageReply) Reset() {
 	*x = PluginMessageReply{}
-	mi := &file_proto_arupa_proto_msgTypes[24]
+	mi := &file_proto_arupa_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1439,7 +1528,7 @@ func (x *PluginMessageReply) String() string {
 func (*PluginMessageReply) ProtoMessage() {}
 
 func (x *PluginMessageReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[24]
+	mi := &file_proto_arupa_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1452,7 +1541,7 @@ func (x *PluginMessageReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PluginMessageReply.ProtoReflect.Descriptor instead.
 func (*PluginMessageReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{24}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *PluginMessageReply) GetError() string {
@@ -1479,7 +1568,7 @@ type LogRequest struct {
 
 func (x *LogRequest) Reset() {
 	*x = LogRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[25]
+	mi := &file_proto_arupa_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1491,7 +1580,7 @@ func (x *LogRequest) String() string {
 func (*LogRequest) ProtoMessage() {}
 
 func (x *LogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[25]
+	mi := &file_proto_arupa_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1504,7 +1593,7 @@ func (x *LogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogRequest.ProtoReflect.Descriptor instead.
 func (*LogRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{25}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *LogRequest) GetLevel() string {
@@ -1529,7 +1618,7 @@ type LogReply struct {
 
 func (x *LogReply) Reset() {
 	*x = LogReply{}
-	mi := &file_proto_arupa_proto_msgTypes[26]
+	mi := &file_proto_arupa_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1541,7 +1630,7 @@ func (x *LogReply) String() string {
 func (*LogReply) ProtoMessage() {}
 
 func (x *LogReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[26]
+	mi := &file_proto_arupa_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1554,7 +1643,7 @@ func (x *LogReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogReply.ProtoReflect.Descriptor instead.
 func (*LogReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{26}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{28}
 }
 
 var File_proto_arupa_proto protoreflect.FileDescriptor
@@ -1657,7 +1746,14 @@ const file_proto_arupa_proto_rawDesc = "" +
 	"\vKVListReply\x12\x12\n" +
 	"\x04keys\x18\x01 \x03(\tR\x04keys\"!\n" +
 	"\tEmitReply\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\xa4\x01\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\x12\n" +
+	"\x10ParamsGetRequest\"\xa6\x01\n" +
+	"\x0eParamsGetReply\x12C\n" +
+	"\x06params\x18\x01 \x03(\v2+.arupa.plugin.v1.ParamsGetReply.ParamsEntryR\x06params\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a9\n" +
+	"\vParamsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa4\x01\n" +
 	"\x12ParamsPatchRequest\x12>\n" +
 	"\x03set\x18\x01 \x03(\v2,.arupa.plugin.v1.ParamsPatchRequest.SetEntryR\x03set\x12\x16\n" +
 	"\x06delete\x18\x02 \x03(\tR\x06delete\x1a6\n" +
@@ -1685,12 +1781,13 @@ const file_proto_arupa_proto_rawDesc = "" +
 	"\n" +
 	"HandleHTTP\x12\x1c.arupa.plugin.v1.HTTPRequest\x1a\x1d.arupa.plugin.v1.HTTPResponse\x12T\n" +
 	"\x11HandleSocketEvent\x12\x1c.arupa.plugin.v1.SocketEvent\x1a!.arupa.plugin.v1.SocketEventReply\x12Z\n" +
-	"\x13HandlePluginMessage\x12\x1e.arupa.plugin.v1.PluginMessage\x1a#.arupa.plugin.v1.PluginMessageReply2\xdc\x04\n" +
+	"\x13HandlePluginMessage\x12\x1e.arupa.plugin.v1.PluginMessage\x1a#.arupa.plugin.v1.PluginMessageReply2\xad\x05\n" +
 	"\x04Host\x12C\n" +
 	"\x05KVGet\x12\x1d.arupa.plugin.v1.KVGetRequest\x1a\x1b.arupa.plugin.v1.KVGetReply\x12C\n" +
 	"\x05KVSet\x12\x1d.arupa.plugin.v1.KVSetRequest\x1a\x1b.arupa.plugin.v1.KVSetReply\x12L\n" +
 	"\bKVDelete\x12 .arupa.plugin.v1.KVDeleteRequest\x1a\x1e.arupa.plugin.v1.KVDeleteReply\x12F\n" +
-	"\x06KVList\x12\x1e.arupa.plugin.v1.KVListRequest\x1a\x1c.arupa.plugin.v1.KVListReply\x12U\n" +
+	"\x06KVList\x12\x1e.arupa.plugin.v1.KVListRequest\x1a\x1c.arupa.plugin.v1.KVListReply\x12O\n" +
+	"\tGetParams\x12!.arupa.plugin.v1.ParamsGetRequest\x1a\x1f.arupa.plugin.v1.ParamsGetReply\x12U\n" +
 	"\vPatchParams\x12#.arupa.plugin.v1.ParamsPatchRequest\x1a!.arupa.plugin.v1.ParamsPatchReply\x12D\n" +
 	"\x04Emit\x12 .arupa.plugin.v1.EmitInstruction\x1a\x1a.arupa.plugin.v1.EmitReply\x12X\n" +
 	"\x11SendPluginMessage\x12\x1e.arupa.plugin.v1.PluginMessage\x1a#.arupa.plugin.v1.PluginMessageReply\x12=\n" +
@@ -1708,7 +1805,7 @@ func file_proto_arupa_proto_rawDescGZIP() []byte {
 	return file_proto_arupa_proto_rawDescData
 }
 
-var file_proto_arupa_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_proto_arupa_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_proto_arupa_proto_goTypes = []any{
 	(*User)(nil),               // 0: arupa.plugin.v1.User
 	(*AccessPolicy)(nil),       // 1: arupa.plugin.v1.AccessPolicy
@@ -1731,63 +1828,69 @@ var file_proto_arupa_proto_goTypes = []any{
 	(*KVListRequest)(nil),      // 18: arupa.plugin.v1.KVListRequest
 	(*KVListReply)(nil),        // 19: arupa.plugin.v1.KVListReply
 	(*EmitReply)(nil),          // 20: arupa.plugin.v1.EmitReply
-	(*ParamsPatchRequest)(nil), // 21: arupa.plugin.v1.ParamsPatchRequest
-	(*ParamsPatchReply)(nil),   // 22: arupa.plugin.v1.ParamsPatchReply
-	(*PluginMessage)(nil),      // 23: arupa.plugin.v1.PluginMessage
-	(*PluginMessageReply)(nil), // 24: arupa.plugin.v1.PluginMessageReply
-	(*LogRequest)(nil),         // 25: arupa.plugin.v1.LogRequest
-	(*LogReply)(nil),           // 26: arupa.plugin.v1.LogReply
-	nil,                        // 27: arupa.plugin.v1.HTTPRequest.HeadersEntry
-	nil,                        // 28: arupa.plugin.v1.HTTPResponse.HeadersEntry
-	nil,                        // 29: arupa.plugin.v1.SocketNamespace.EventAccessEntry
-	nil,                        // 30: arupa.plugin.v1.RegisterRequest.ParamsEntry
-	nil,                        // 31: arupa.plugin.v1.ParamsPatchRequest.SetEntry
+	(*ParamsGetRequest)(nil),   // 21: arupa.plugin.v1.ParamsGetRequest
+	(*ParamsGetReply)(nil),     // 22: arupa.plugin.v1.ParamsGetReply
+	(*ParamsPatchRequest)(nil), // 23: arupa.plugin.v1.ParamsPatchRequest
+	(*ParamsPatchReply)(nil),   // 24: arupa.plugin.v1.ParamsPatchReply
+	(*PluginMessage)(nil),      // 25: arupa.plugin.v1.PluginMessage
+	(*PluginMessageReply)(nil), // 26: arupa.plugin.v1.PluginMessageReply
+	(*LogRequest)(nil),         // 27: arupa.plugin.v1.LogRequest
+	(*LogReply)(nil),           // 28: arupa.plugin.v1.LogReply
+	nil,                        // 29: arupa.plugin.v1.HTTPRequest.HeadersEntry
+	nil,                        // 30: arupa.plugin.v1.HTTPResponse.HeadersEntry
+	nil,                        // 31: arupa.plugin.v1.SocketNamespace.EventAccessEntry
+	nil,                        // 32: arupa.plugin.v1.RegisterRequest.ParamsEntry
+	nil,                        // 33: arupa.plugin.v1.ParamsGetReply.ParamsEntry
+	nil,                        // 34: arupa.plugin.v1.ParamsPatchRequest.SetEntry
 }
 var file_proto_arupa_proto_depIdxs = []int32{
 	1,  // 0: arupa.plugin.v1.HTTPRoute.access:type_name -> arupa.plugin.v1.AccessPolicy
-	27, // 1: arupa.plugin.v1.HTTPRequest.headers:type_name -> arupa.plugin.v1.HTTPRequest.HeadersEntry
+	29, // 1: arupa.plugin.v1.HTTPRequest.headers:type_name -> arupa.plugin.v1.HTTPRequest.HeadersEntry
 	0,  // 2: arupa.plugin.v1.HTTPRequest.user:type_name -> arupa.plugin.v1.User
-	28, // 3: arupa.plugin.v1.HTTPResponse.headers:type_name -> arupa.plugin.v1.HTTPResponse.HeadersEntry
+	30, // 3: arupa.plugin.v1.HTTPResponse.headers:type_name -> arupa.plugin.v1.HTTPResponse.HeadersEntry
 	1,  // 4: arupa.plugin.v1.StaticMount.access:type_name -> arupa.plugin.v1.AccessPolicy
 	1,  // 5: arupa.plugin.v1.SocketNamespace.access:type_name -> arupa.plugin.v1.AccessPolicy
-	29, // 6: arupa.plugin.v1.SocketNamespace.event_access:type_name -> arupa.plugin.v1.SocketNamespace.EventAccessEntry
+	31, // 6: arupa.plugin.v1.SocketNamespace.event_access:type_name -> arupa.plugin.v1.SocketNamespace.EventAccessEntry
 	0,  // 7: arupa.plugin.v1.SocketEvent.user:type_name -> arupa.plugin.v1.User
 	8,  // 8: arupa.plugin.v1.SocketEventReply.emits:type_name -> arupa.plugin.v1.EmitInstruction
-	30, // 9: arupa.plugin.v1.RegisterRequest.params:type_name -> arupa.plugin.v1.RegisterRequest.ParamsEntry
+	32, // 9: arupa.plugin.v1.RegisterRequest.params:type_name -> arupa.plugin.v1.RegisterRequest.ParamsEntry
 	2,  // 10: arupa.plugin.v1.RegisterReply.http_routes:type_name -> arupa.plugin.v1.HTTPRoute
 	6,  // 11: arupa.plugin.v1.RegisterReply.socket_namespaces:type_name -> arupa.plugin.v1.SocketNamespace
 	5,  // 12: arupa.plugin.v1.RegisterReply.static_mounts:type_name -> arupa.plugin.v1.StaticMount
-	31, // 13: arupa.plugin.v1.ParamsPatchRequest.set:type_name -> arupa.plugin.v1.ParamsPatchRequest.SetEntry
-	1,  // 14: arupa.plugin.v1.SocketNamespace.EventAccessEntry.value:type_name -> arupa.plugin.v1.AccessPolicy
-	10, // 15: arupa.plugin.v1.Plugin.Register:input_type -> arupa.plugin.v1.RegisterRequest
-	3,  // 16: arupa.plugin.v1.Plugin.HandleHTTP:input_type -> arupa.plugin.v1.HTTPRequest
-	7,  // 17: arupa.plugin.v1.Plugin.HandleSocketEvent:input_type -> arupa.plugin.v1.SocketEvent
-	23, // 18: arupa.plugin.v1.Plugin.HandlePluginMessage:input_type -> arupa.plugin.v1.PluginMessage
-	12, // 19: arupa.plugin.v1.Host.KVGet:input_type -> arupa.plugin.v1.KVGetRequest
-	14, // 20: arupa.plugin.v1.Host.KVSet:input_type -> arupa.plugin.v1.KVSetRequest
-	16, // 21: arupa.plugin.v1.Host.KVDelete:input_type -> arupa.plugin.v1.KVDeleteRequest
-	18, // 22: arupa.plugin.v1.Host.KVList:input_type -> arupa.plugin.v1.KVListRequest
-	21, // 23: arupa.plugin.v1.Host.PatchParams:input_type -> arupa.plugin.v1.ParamsPatchRequest
-	8,  // 24: arupa.plugin.v1.Host.Emit:input_type -> arupa.plugin.v1.EmitInstruction
-	23, // 25: arupa.plugin.v1.Host.SendPluginMessage:input_type -> arupa.plugin.v1.PluginMessage
-	25, // 26: arupa.plugin.v1.Host.Log:input_type -> arupa.plugin.v1.LogRequest
-	11, // 27: arupa.plugin.v1.Plugin.Register:output_type -> arupa.plugin.v1.RegisterReply
-	4,  // 28: arupa.plugin.v1.Plugin.HandleHTTP:output_type -> arupa.plugin.v1.HTTPResponse
-	9,  // 29: arupa.plugin.v1.Plugin.HandleSocketEvent:output_type -> arupa.plugin.v1.SocketEventReply
-	24, // 30: arupa.plugin.v1.Plugin.HandlePluginMessage:output_type -> arupa.plugin.v1.PluginMessageReply
-	13, // 31: arupa.plugin.v1.Host.KVGet:output_type -> arupa.plugin.v1.KVGetReply
-	15, // 32: arupa.plugin.v1.Host.KVSet:output_type -> arupa.plugin.v1.KVSetReply
-	17, // 33: arupa.plugin.v1.Host.KVDelete:output_type -> arupa.plugin.v1.KVDeleteReply
-	19, // 34: arupa.plugin.v1.Host.KVList:output_type -> arupa.plugin.v1.KVListReply
-	22, // 35: arupa.plugin.v1.Host.PatchParams:output_type -> arupa.plugin.v1.ParamsPatchReply
-	20, // 36: arupa.plugin.v1.Host.Emit:output_type -> arupa.plugin.v1.EmitReply
-	24, // 37: arupa.plugin.v1.Host.SendPluginMessage:output_type -> arupa.plugin.v1.PluginMessageReply
-	26, // 38: arupa.plugin.v1.Host.Log:output_type -> arupa.plugin.v1.LogReply
-	27, // [27:39] is the sub-list for method output_type
-	15, // [15:27] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	33, // 13: arupa.plugin.v1.ParamsGetReply.params:type_name -> arupa.plugin.v1.ParamsGetReply.ParamsEntry
+	34, // 14: arupa.plugin.v1.ParamsPatchRequest.set:type_name -> arupa.plugin.v1.ParamsPatchRequest.SetEntry
+	1,  // 15: arupa.plugin.v1.SocketNamespace.EventAccessEntry.value:type_name -> arupa.plugin.v1.AccessPolicy
+	10, // 16: arupa.plugin.v1.Plugin.Register:input_type -> arupa.plugin.v1.RegisterRequest
+	3,  // 17: arupa.plugin.v1.Plugin.HandleHTTP:input_type -> arupa.plugin.v1.HTTPRequest
+	7,  // 18: arupa.plugin.v1.Plugin.HandleSocketEvent:input_type -> arupa.plugin.v1.SocketEvent
+	25, // 19: arupa.plugin.v1.Plugin.HandlePluginMessage:input_type -> arupa.plugin.v1.PluginMessage
+	12, // 20: arupa.plugin.v1.Host.KVGet:input_type -> arupa.plugin.v1.KVGetRequest
+	14, // 21: arupa.plugin.v1.Host.KVSet:input_type -> arupa.plugin.v1.KVSetRequest
+	16, // 22: arupa.plugin.v1.Host.KVDelete:input_type -> arupa.plugin.v1.KVDeleteRequest
+	18, // 23: arupa.plugin.v1.Host.KVList:input_type -> arupa.plugin.v1.KVListRequest
+	21, // 24: arupa.plugin.v1.Host.GetParams:input_type -> arupa.plugin.v1.ParamsGetRequest
+	23, // 25: arupa.plugin.v1.Host.PatchParams:input_type -> arupa.plugin.v1.ParamsPatchRequest
+	8,  // 26: arupa.plugin.v1.Host.Emit:input_type -> arupa.plugin.v1.EmitInstruction
+	25, // 27: arupa.plugin.v1.Host.SendPluginMessage:input_type -> arupa.plugin.v1.PluginMessage
+	27, // 28: arupa.plugin.v1.Host.Log:input_type -> arupa.plugin.v1.LogRequest
+	11, // 29: arupa.plugin.v1.Plugin.Register:output_type -> arupa.plugin.v1.RegisterReply
+	4,  // 30: arupa.plugin.v1.Plugin.HandleHTTP:output_type -> arupa.plugin.v1.HTTPResponse
+	9,  // 31: arupa.plugin.v1.Plugin.HandleSocketEvent:output_type -> arupa.plugin.v1.SocketEventReply
+	26, // 32: arupa.plugin.v1.Plugin.HandlePluginMessage:output_type -> arupa.plugin.v1.PluginMessageReply
+	13, // 33: arupa.plugin.v1.Host.KVGet:output_type -> arupa.plugin.v1.KVGetReply
+	15, // 34: arupa.plugin.v1.Host.KVSet:output_type -> arupa.plugin.v1.KVSetReply
+	17, // 35: arupa.plugin.v1.Host.KVDelete:output_type -> arupa.plugin.v1.KVDeleteReply
+	19, // 36: arupa.plugin.v1.Host.KVList:output_type -> arupa.plugin.v1.KVListReply
+	22, // 37: arupa.plugin.v1.Host.GetParams:output_type -> arupa.plugin.v1.ParamsGetReply
+	24, // 38: arupa.plugin.v1.Host.PatchParams:output_type -> arupa.plugin.v1.ParamsPatchReply
+	20, // 39: arupa.plugin.v1.Host.Emit:output_type -> arupa.plugin.v1.EmitReply
+	26, // 40: arupa.plugin.v1.Host.SendPluginMessage:output_type -> arupa.plugin.v1.PluginMessageReply
+	28, // 41: arupa.plugin.v1.Host.Log:output_type -> arupa.plugin.v1.LogReply
+	29, // [29:42] is the sub-list for method output_type
+	16, // [16:29] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_proto_arupa_proto_init() }
@@ -1801,7 +1904,7 @@ func file_proto_arupa_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_arupa_proto_rawDesc), len(file_proto_arupa_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

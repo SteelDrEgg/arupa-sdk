@@ -15,11 +15,13 @@ import (
 
 const hostCallbackTokenMetadata = "x-panel-token"
 
-type emitClient interface {
+type hostClient interface {
 	KVGet(context.Context, *pluginv1.KVGetRequest, ...googlegrpc.CallOption) (*pluginv1.KVGetReply, error)
 	KVSet(context.Context, *pluginv1.KVSetRequest, ...googlegrpc.CallOption) (*pluginv1.KVSetReply, error)
 	KVDelete(context.Context, *pluginv1.KVDeleteRequest, ...googlegrpc.CallOption) (*pluginv1.KVDeleteReply, error)
 	KVList(context.Context, *pluginv1.KVListRequest, ...googlegrpc.CallOption) (*pluginv1.KVListReply, error)
+	GetParams(context.Context, *pluginv1.ParamsGetRequest, ...googlegrpc.CallOption) (*pluginv1.ParamsGetReply, error)
+	PatchParams(context.Context, *pluginv1.ParamsPatchRequest, ...googlegrpc.CallOption) (*pluginv1.ParamsPatchReply, error)
 	Emit(context.Context, *pluginv1.EmitInstruction, ...googlegrpc.CallOption) (*pluginv1.EmitReply, error)
 	SendPluginMessage(context.Context, *pluginv1.PluginMessage, ...googlegrpc.CallOption) (*pluginv1.PluginMessageReply, error)
 }
@@ -27,7 +29,7 @@ type emitClient interface {
 // host is the gRPC-only callback bridge for host operations that a plugin can
 // invoke after registration, including background Socket.IO emits.
 type host struct {
-	client emitClient
+	client hostClient
 	closer io.Closer
 	token  string
 }
@@ -172,6 +174,45 @@ func (h *host) kvList(ctx context.Context, namespace string) ([]string, error) {
 	return append([]string(nil), reply.GetKeys()...), nil
 }
 
+func (h *host) getParams(ctx context.Context) (map[string]string, error) {
+	if h == nil || h.client == nil {
+		return nil, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	reply, err := h.client.GetParams(ctx, &pluginv1.ParamsGetRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("arupa/grpc: host get params: %w", err)
+	}
+	if message := reply.GetError(); message != "" {
+		return nil, fmt.Errorf("arupa/grpc: host get params: %s", message)
+	}
+	return arupa.CloneParams(reply.GetParams()), nil
+}
+
+func (h *host) patchParams(ctx context.Context, patch arupa.ParamsPatch) error {
+	if h == nil || h.client == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	reply, err := h.client.PatchParams(ctx, &pluginv1.ParamsPatchRequest{
+		Set:    arupa.CloneParams(patch.Set),
+		Delete: append([]string(nil), patch.Delete...),
+	})
+	if err != nil {
+		return fmt.Errorf("arupa/grpc: host patch params: %w", err)
+	}
+	if message := reply.GetError(); message != "" {
+		return fmt.Errorf("arupa/grpc: host patch params: %s", message)
+	}
+	return nil
+}
+
 func validateKVRequest(namespace, key string) error {
 	if namespace == "" {
 		return fmt.Errorf("arupa: kv namespace is required")
@@ -298,6 +339,30 @@ func (p *Plugin) KVList(ctx context.Context, namespace string) ([]string, error)
 		return nil, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
 	}
 	return p.host.current().kvList(ctx, namespace)
+}
+
+// InitialParams returns the Params received during the most recent Register.
+func (p *Plugin) InitialParams() map[string]string {
+	if p == nil {
+		return map[string]string{}
+	}
+	return p.initialParams.Load()
+}
+
+// Params reads the current effective Params from the host.
+func (p *Plugin) Params(ctx context.Context) (map[string]string, error) {
+	if p == nil {
+		return nil, fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	return p.host.current().getParams(ctx)
+}
+
+// PatchParams applies a partial update to this plugin's persisted Params.
+func (p *Plugin) PatchParams(ctx context.Context, patch arupa.ParamsPatch) error {
+	if p == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	return p.host.current().patchParams(ctx, patch)
 }
 
 // Close releases the gRPC host callback connection.

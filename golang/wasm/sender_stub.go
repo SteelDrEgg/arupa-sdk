@@ -12,6 +12,8 @@ func platformMessageSender() arupa.MessageSender { return nil }
 
 func platformKVClient() arupa.KVClient { return nil }
 
+func platformParamsClient() paramsClient { return nil }
+
 func validateKVRequest(namespace, key string) error {
 	if namespace == "" {
 		return fmt.Errorf("arupa: kv namespace is required")

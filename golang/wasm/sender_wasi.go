@@ -14,12 +14,18 @@ type hostMessageSender struct{ host pluginv1.Host }
 
 type hostKVClient struct{ host pluginv1.Host }
 
+type hostParamsClient struct{ host pluginv1.Host }
+
 func platformMessageSender() arupa.MessageSender {
 	return hostMessageSender{host: pluginv1.NewHost()}
 }
 
 func platformKVClient() arupa.KVClient {
 	return hostKVClient{host: pluginv1.NewHost()}
+}
+
+func platformParamsClient() paramsClient {
+	return hostParamsClient{host: pluginv1.NewHost()}
 }
 
 func (s hostMessageSender) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
@@ -88,6 +94,31 @@ func (s hostKVClient) KVList(ctx context.Context, namespace string) ([]string, e
 		return nil, fmt.Errorf("arupa/wasm: host kv list: %w", err)
 	}
 	return append([]string(nil), reply.GetKeys()...), nil
+}
+
+func (s hostParamsClient) GetParams(ctx context.Context) (map[string]string, error) {
+	reply, err := s.host.GetParams(ctx, &pluginv1.ParamsGetRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("arupa/wasm: host get params: %w", err)
+	}
+	if message := reply.GetError(); message != "" {
+		return nil, fmt.Errorf("arupa/wasm: host get params: %s", message)
+	}
+	return arupa.CloneParams(reply.GetParams()), nil
+}
+
+func (s hostParamsClient) PatchParams(ctx context.Context, patch arupa.ParamsPatch) error {
+	reply, err := s.host.PatchParams(ctx, &pluginv1.ParamsPatchRequest{
+		Set:    arupa.CloneParams(patch.Set),
+		Delete: append([]string(nil), patch.Delete...),
+	})
+	if err != nil {
+		return fmt.Errorf("arupa/wasm: host patch params: %w", err)
+	}
+	if message := reply.GetError(); message != "" {
+		return fmt.Errorf("arupa/wasm: host patch params: %s", message)
+	}
+	return nil
 }
 
 func validateKVRequest(namespace, key string) error {

@@ -725,6 +725,44 @@ func (x *EmitReply) GetError() string {
 }
 
 // ===== persisted plugin params =====
+// The caller is identified by the authenticated host callback context.
+type ParamsGetRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ParamsGetRequest) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+type ParamsGetReply struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Params map[string]string `protobuf:"bytes,1,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Error  string            `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *ParamsGetReply) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *ParamsGetReply) GetParams() map[string]string {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+func (x *ParamsGetReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type ParamsPatchRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -900,6 +938,7 @@ type Host interface {
 	KVSet(context.Context, *KVSetRequest) (*KVSetReply, error)
 	KVDelete(context.Context, *KVDeleteRequest) (*KVDeleteReply, error)
 	KVList(context.Context, *KVListRequest) (*KVListReply, error)
+	GetParams(context.Context, *ParamsGetRequest) (*ParamsGetReply, error)
 	PatchParams(context.Context, *ParamsPatchRequest) (*ParamsPatchReply, error)
 	Emit(context.Context, *EmitInstruction) (*EmitReply, error)
 	SendPluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error)

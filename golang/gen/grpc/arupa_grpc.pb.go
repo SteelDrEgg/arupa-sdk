@@ -245,6 +245,7 @@ const (
 	Host_KVSet_FullMethodName             = "/arupa.plugin.v1.Host/KVSet"
 	Host_KVDelete_FullMethodName          = "/arupa.plugin.v1.Host/KVDelete"
 	Host_KVList_FullMethodName            = "/arupa.plugin.v1.Host/KVList"
+	Host_GetParams_FullMethodName         = "/arupa.plugin.v1.Host/GetParams"
 	Host_PatchParams_FullMethodName       = "/arupa.plugin.v1.Host/PatchParams"
 	Host_Emit_FullMethodName              = "/arupa.plugin.v1.Host/Emit"
 	Host_SendPluginMessage_FullMethodName = "/arupa.plugin.v1.Host/SendPluginMessage"
@@ -267,6 +268,7 @@ type HostClient interface {
 	KVSet(ctx context.Context, in *KVSetRequest, opts ...grpc.CallOption) (*KVSetReply, error)
 	KVDelete(ctx context.Context, in *KVDeleteRequest, opts ...grpc.CallOption) (*KVDeleteReply, error)
 	KVList(ctx context.Context, in *KVListRequest, opts ...grpc.CallOption) (*KVListReply, error)
+	GetParams(ctx context.Context, in *ParamsGetRequest, opts ...grpc.CallOption) (*ParamsGetReply, error)
 	PatchParams(ctx context.Context, in *ParamsPatchRequest, opts ...grpc.CallOption) (*ParamsPatchReply, error)
 	Emit(ctx context.Context, in *EmitInstruction, opts ...grpc.CallOption) (*EmitReply, error)
 	SendPluginMessage(ctx context.Context, in *PluginMessage, opts ...grpc.CallOption) (*PluginMessageReply, error)
@@ -315,6 +317,16 @@ func (c *hostClient) KVList(ctx context.Context, in *KVListRequest, opts ...grpc
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(KVListReply)
 	err := c.cc.Invoke(ctx, Host_KVList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostClient) GetParams(ctx context.Context, in *ParamsGetRequest, opts ...grpc.CallOption) (*ParamsGetReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ParamsGetReply)
+	err := c.cc.Invoke(ctx, Host_GetParams_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -377,6 +389,7 @@ type HostServer interface {
 	KVSet(context.Context, *KVSetRequest) (*KVSetReply, error)
 	KVDelete(context.Context, *KVDeleteRequest) (*KVDeleteReply, error)
 	KVList(context.Context, *KVListRequest) (*KVListReply, error)
+	GetParams(context.Context, *ParamsGetRequest) (*ParamsGetReply, error)
 	PatchParams(context.Context, *ParamsPatchRequest) (*ParamsPatchReply, error)
 	Emit(context.Context, *EmitInstruction) (*EmitReply, error)
 	SendPluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error)
@@ -402,6 +415,9 @@ func (UnimplementedHostServer) KVDelete(context.Context, *KVDeleteRequest) (*KVD
 }
 func (UnimplementedHostServer) KVList(context.Context, *KVListRequest) (*KVListReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KVList not implemented")
+}
+func (UnimplementedHostServer) GetParams(context.Context, *ParamsGetRequest) (*ParamsGetReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetParams not implemented")
 }
 func (UnimplementedHostServer) PatchParams(context.Context, *ParamsPatchRequest) (*ParamsPatchReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PatchParams not implemented")
@@ -508,6 +524,24 @@ func _Host_KVList_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Host_GetParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ParamsGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServer).GetParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Host_GetParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServer).GetParams(ctx, req.(*ParamsGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Host_PatchParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ParamsPatchRequest)
 	if err := dec(in); err != nil {
@@ -602,6 +636,10 @@ var Host_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "KVList",
 			Handler:    _Host_KVList_Handler,
+		},
+		{
+			MethodName: "GetParams",
+			Handler:    _Host_GetParams_Handler,
 		},
 		{
 			MethodName: "PatchParams",

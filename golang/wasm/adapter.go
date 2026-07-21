@@ -24,19 +24,32 @@ func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.
 // Plugin is an optional WASM Plugin implementation around a normal
 // http.Handler. It adds no framework routing.
 type Plugin struct {
-	Registration arupa.Registration
-	Handler      http.Handler
-	Events       *arupa.SocketListener
-	Messages     *arupa.MessageListener
-	sender       arupa.MessageSender
-	kvClient     arupa.KVClient
+	Registration  arupa.Registration
+	Handler       http.Handler
+	Events        *arupa.SocketListener
+	Messages      *arupa.MessageListener
+	sender        arupa.MessageSender
+	kvClient      arupa.KVClient
+	paramsClient  paramsClient
+	initialParams arupa.ParamsSnapshot
 }
 
 var _ pluginv1.Plugin = (*Plugin)(nil)
+var _ arupa.ParamsClient = (*Plugin)(nil)
 
-func (p *Plugin) Register(context.Context, *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+type paramsClient interface {
+	GetParams(context.Context) (map[string]string, error)
+	PatchParams(context.Context, arupa.ParamsPatch) error
+}
+
+func (p *Plugin) Register(_ context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
+	if request == nil {
+		return nil, fmt.Errorf("arupa/wasm: register request is nil")
+	}
 	p.sender = platformMessageSender()
 	p.kvClient = platformKVClient()
+	p.paramsClient = platformParamsClient()
+	p.initialParams.Store(request.GetParams())
 	return RegistrationReply(p.Registration)
 }
 
@@ -153,6 +166,30 @@ func (p *Plugin) KVList(ctx context.Context, namespace string) ([]string, error)
 		return nil, fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
 	}
 	return p.kvClient.KVList(ctx, namespace)
+}
+
+// InitialParams returns the Params received during the most recent Register.
+func (p *Plugin) InitialParams() map[string]string {
+	if p == nil {
+		return map[string]string{}
+	}
+	return p.initialParams.Load()
+}
+
+// Params reads the current effective Params from the host.
+func (p *Plugin) Params(ctx context.Context) (map[string]string, error) {
+	if p == nil || p.paramsClient == nil {
+		return nil, fmt.Errorf("arupa/wasm: host Params are unavailable before registration")
+	}
+	return p.paramsClient.GetParams(ctx)
+}
+
+// PatchParams applies a partial update to this plugin's persisted Params.
+func (p *Plugin) PatchParams(ctx context.Context, patch arupa.ParamsPatch) error {
+	if p == nil || p.paramsClient == nil {
+		return fmt.Errorf("arupa/wasm: host Params are unavailable before registration")
+	}
+	return p.paramsClient.PatchParams(ctx, patch)
 }
 
 func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {

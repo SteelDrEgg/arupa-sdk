@@ -26,14 +26,16 @@ func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.
 type Plugin struct {
 	pluginv1.UnimplementedPluginServer
 
-	Registration arupa.Registration
-	Handler      http.Handler
-	Events       *arupa.SocketListener
-	Messages     *arupa.MessageListener
-	host         hostState
+	Registration  arupa.Registration
+	Handler       http.Handler
+	Events        *arupa.SocketListener
+	Messages      *arupa.MessageListener
+	host          hostState
+	initialParams arupa.ParamsSnapshot
 }
 
 var _ pluginv1.PluginServer = (*Plugin)(nil)
+var _ arupa.ParamsClient = (*Plugin)(nil)
 
 func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	reply, err := RegistrationReply(p.Registration)
@@ -43,6 +45,7 @@ func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest
 	if err := p.configureHost(ctx, request); err != nil {
 		return nil, err
 	}
+	p.initialParams.Store(request.GetParams())
 	return reply, nil
 }
 
