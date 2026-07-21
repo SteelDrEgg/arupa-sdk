@@ -16,6 +16,8 @@ type hostKVClient struct{ host pluginv1.Host }
 
 type hostParamsClient struct{ host pluginv1.Host }
 
+type hostLogger struct{ host pluginv1.Host }
+
 func platformMessageSender() arupa.MessageSender {
 	return hostMessageSender{host: pluginv1.NewHost()}
 }
@@ -26,6 +28,10 @@ func platformKVClient() arupa.KVClient {
 
 func platformParamsClient() paramsClient {
 	return hostParamsClient{host: pluginv1.NewHost()}
+}
+
+func platformLogger() arupa.Logger {
+	return hostLogger{host: pluginv1.NewHost()}
 }
 
 func (s hostMessageSender) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
@@ -117,6 +123,14 @@ func (s hostParamsClient) PatchParams(ctx context.Context, patch arupa.ParamsPat
 	}
 	if message := reply.GetError(); message != "" {
 		return fmt.Errorf("arupa/wasm: host patch params: %s", message)
+	}
+	return nil
+}
+
+func (s hostLogger) Log(ctx context.Context, level arupa.LogLevel, message string) error {
+	_, err := s.host.Log(ctx, &pluginv1.LogRequest{Level: string(level), Message: message})
+	if err != nil {
+		return fmt.Errorf("arupa/wasm: host log: %w", err)
 	}
 	return nil
 }

@@ -36,6 +36,7 @@ type Plugin struct {
 
 var _ pluginv1.PluginServer = (*Plugin)(nil)
 var _ arupa.ParamsClient = (*Plugin)(nil)
+var _ arupa.Logger = (*Plugin)(nil)
 
 func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	reply, err := RegistrationReply(p.Registration)

@@ -22,6 +22,7 @@ type hostClient interface {
 	KVList(context.Context, *pluginv1.KVListRequest, ...googlegrpc.CallOption) (*pluginv1.KVListReply, error)
 	GetParams(context.Context, *pluginv1.ParamsGetRequest, ...googlegrpc.CallOption) (*pluginv1.ParamsGetReply, error)
 	PatchParams(context.Context, *pluginv1.ParamsPatchRequest, ...googlegrpc.CallOption) (*pluginv1.ParamsPatchReply, error)
+	Log(context.Context, *pluginv1.LogRequest, ...googlegrpc.CallOption) (*pluginv1.LogReply, error)
 	Emit(context.Context, *pluginv1.EmitInstruction, ...googlegrpc.CallOption) (*pluginv1.EmitReply, error)
 	SendPluginMessage(context.Context, *pluginv1.PluginMessage, ...googlegrpc.CallOption) (*pluginv1.PluginMessageReply, error)
 }
@@ -213,6 +214,21 @@ func (h *host) patchParams(ctx context.Context, patch arupa.ParamsPatch) error {
 	return nil
 }
 
+func (h *host) log(ctx context.Context, level arupa.LogLevel, message string) error {
+	if h == nil || h.client == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, hostCallbackTokenMetadata, h.token)
+	_, err := h.client.Log(ctx, &pluginv1.LogRequest{Level: string(level), Message: message})
+	if err != nil {
+		return fmt.Errorf("arupa/grpc: host log: %w", err)
+	}
+	return nil
+}
+
 func validateKVRequest(namespace, key string) error {
 	if namespace == "" {
 		return fmt.Errorf("arupa: kv namespace is required")
@@ -363,6 +379,38 @@ func (p *Plugin) PatchParams(ctx context.Context, patch arupa.ParamsPatch) error
 		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
 	}
 	return p.host.current().patchParams(ctx, patch)
+}
+
+// Log writes a host-owned plugin log record at level.
+func (p *Plugin) Log(ctx context.Context, level arupa.LogLevel, message string) error {
+	if p == nil {
+		return fmt.Errorf("arupa/grpc: host callback is unavailable before successful registration")
+	}
+	level, err := arupa.NormalizeLogLevel(level)
+	if err != nil {
+		return err
+	}
+	return p.host.current().log(ctx, level, message)
+}
+
+// Debug writes a debug-level plugin log record.
+func (p *Plugin) Debug(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogDebug, message)
+}
+
+// Info writes an info-level plugin log record.
+func (p *Plugin) Info(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogInfo, message)
+}
+
+// Warn writes a warning-level plugin log record.
+func (p *Plugin) Warn(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogWarn, message)
+}
+
+// Error writes an error-level plugin log record.
+func (p *Plugin) Error(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogError, message)
 }
 
 // Close releases the gRPC host callback connection.

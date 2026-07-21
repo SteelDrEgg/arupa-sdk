@@ -32,10 +32,12 @@ type Plugin struct {
 	kvClient      arupa.KVClient
 	paramsClient  paramsClient
 	initialParams arupa.ParamsSnapshot
+	logger        arupa.Logger
 }
 
 var _ pluginv1.Plugin = (*Plugin)(nil)
 var _ arupa.ParamsClient = (*Plugin)(nil)
+var _ arupa.Logger = (*Plugin)(nil)
 
 type paramsClient interface {
 	GetParams(context.Context) (map[string]string, error)
@@ -49,6 +51,7 @@ func (p *Plugin) Register(_ context.Context, request *pluginv1.RegisterRequest) 
 	p.sender = platformMessageSender()
 	p.kvClient = platformKVClient()
 	p.paramsClient = platformParamsClient()
+	p.logger = platformLogger()
 	p.initialParams.Store(request.GetParams())
 	return RegistrationReply(p.Registration)
 }
@@ -190,6 +193,38 @@ func (p *Plugin) PatchParams(ctx context.Context, patch arupa.ParamsPatch) error
 		return fmt.Errorf("arupa/wasm: host Params are unavailable before registration")
 	}
 	return p.paramsClient.PatchParams(ctx, patch)
+}
+
+// Log writes a host-owned plugin log record at level.
+func (p *Plugin) Log(ctx context.Context, level arupa.LogLevel, message string) error {
+	if p == nil || p.logger == nil {
+		return fmt.Errorf("arupa/wasm: host logging is unavailable before registration")
+	}
+	level, err := arupa.NormalizeLogLevel(level)
+	if err != nil {
+		return err
+	}
+	return p.logger.Log(ctx, level, message)
+}
+
+// Debug writes a debug-level plugin log record.
+func (p *Plugin) Debug(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogDebug, message)
+}
+
+// Info writes an info-level plugin log record.
+func (p *Plugin) Info(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogInfo, message)
+}
+
+// Warn writes a warning-level plugin log record.
+func (p *Plugin) Warn(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogWarn, message)
+}
+
+// Error writes an error-level plugin log record.
+func (p *Plugin) Error(ctx context.Context, message string) error {
+	return p.Log(ctx, arupa.LogError, message)
 }
 
 func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {
