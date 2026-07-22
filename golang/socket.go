@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// User is the authenticated identity forwarded by the host with an event.
+// User is the authenticated identity forwarded by the host with a request.
 type User struct {
 	Username string
 	Groups   []string

@@ -124,6 +124,10 @@ func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {
 	if request == nil {
 		return arupa.HTTPRequest{}
 	}
+	var user *arupa.User
+	if source := request.GetUser(); source != nil {
+		user = &arupa.User{Username: source.GetUsername(), Groups: append([]string(nil), source.GetGroups()...)}
+	}
 	headers := make(http.Header, len(request.GetHeaders()))
 	for key, value := range request.GetHeaders() {
 		headers.Set(key, value)
@@ -135,6 +139,7 @@ func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {
 		Headers:    headers,
 		Body:       request.GetBody(),
 		RemoteAddr: request.GetRemoteAddr(),
+		User:       user,
 	}
 }
 

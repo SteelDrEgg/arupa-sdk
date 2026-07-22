@@ -17,6 +17,16 @@ type HTTPRequest struct {
 	Headers    http.Header
 	Body       []byte
 	RemoteAddr string
+	User       *User
+}
+
+type userContextKey struct{}
+
+// UserFromContext returns the authenticated user forwarded by the host.
+// It reports false when the request is unauthenticated.
+func UserFromContext(ctx context.Context) (*User, bool) {
+	user, ok := ctx.Value(userContextKey{}).(*User)
+	return user, ok && user != nil
 }
 
 // HTTPResponse is the framework-neutral representation of a handler response.
@@ -50,6 +60,9 @@ func ServeHTTP(ctx context.Context, request HTTPRequest, handler http.Handler) (
 		return HTTPResponse{}, fmt.Errorf("arupa: build http request: %w", err)
 	}
 	httpRequest.RequestURI = requestURI
+	if request.User != nil {
+		httpRequest = httpRequest.WithContext(context.WithValue(httpRequest.Context(), userContextKey{}, request.User))
+	}
 	httpRequest.RemoteAddr = request.RemoteAddr
 	httpRequest.Header = make(http.Header, len(request.Headers))
 	for key, values := range request.Headers {
