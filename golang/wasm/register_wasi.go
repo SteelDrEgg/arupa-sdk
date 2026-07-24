@@ -2,9 +2,9 @@
 
 package wasm
 
-import pluginv1 "github.com/SteelDrEgg/arupa-sdk/golang/gen/wasm/proto"
+import servicev2 "github.com/SteelDrEgg/arupa-sdk/golang/gen/wasm/proto"
 
-// Register exports plugin through the WASM ABI.
-func Register(plugin *Plugin) {
-	pluginv1.RegisterPlugin(plugin)
+// RegisterService exports service through the WASM ABI.
+func RegisterService(service *Service) {
+	servicev2.RegisterService(service)
 }

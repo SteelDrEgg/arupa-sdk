@@ -4,7 +4,7 @@
 // 	protoc        v7.35.0
 // source: proto/arupa.proto
 
-package pluginv1
+package servicev2
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -21,7 +21,113 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ===== common request context and access =====
+type TransportType int32
+
+const (
+	TransportType_TRANSPORT_TYPE_UNSPECIFIED TransportType = 0
+	TransportType_TRANSPORT_TYPE_STATIC      TransportType = 1
+	TransportType_TRANSPORT_TYPE_HTTP        TransportType = 2
+	TransportType_TRANSPORT_TYPE_SOCKET_IO   TransportType = 3
+	TransportType_TRANSPORT_TYPE_PROXY       TransportType = 4
+)
+
+// Enum value maps for TransportType.
+var (
+	TransportType_name = map[int32]string{
+		0: "TRANSPORT_TYPE_UNSPECIFIED",
+		1: "TRANSPORT_TYPE_STATIC",
+		2: "TRANSPORT_TYPE_HTTP",
+		3: "TRANSPORT_TYPE_SOCKET_IO",
+		4: "TRANSPORT_TYPE_PROXY",
+	}
+	TransportType_value = map[string]int32{
+		"TRANSPORT_TYPE_UNSPECIFIED": 0,
+		"TRANSPORT_TYPE_STATIC":      1,
+		"TRANSPORT_TYPE_HTTP":        2,
+		"TRANSPORT_TYPE_SOCKET_IO":   3,
+		"TRANSPORT_TYPE_PROXY":       4,
+	}
+)
+
+func (x TransportType) Enum() *TransportType {
+	p := new(TransportType)
+	*p = x
+	return p
+}
+
+func (x TransportType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TransportType) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_arupa_proto_enumTypes[0].Descriptor()
+}
+
+func (TransportType) Type() protoreflect.EnumType {
+	return &file_proto_arupa_proto_enumTypes[0]
+}
+
+func (x TransportType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TransportType.Descriptor instead.
+func (TransportType) EnumDescriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{0}
+}
+
+type ProxyNetwork int32
+
+const (
+	ProxyNetwork_PROXY_NETWORK_UNSPECIFIED ProxyNetwork = 0
+	ProxyNetwork_PROXY_NETWORK_INHERITED   ProxyNetwork = 1
+	ProxyNetwork_PROXY_NETWORK_UNIX        ProxyNetwork = 2
+	ProxyNetwork_PROXY_NETWORK_TCP         ProxyNetwork = 3
+)
+
+// Enum value maps for ProxyNetwork.
+var (
+	ProxyNetwork_name = map[int32]string{
+		0: "PROXY_NETWORK_UNSPECIFIED",
+		1: "PROXY_NETWORK_INHERITED",
+		2: "PROXY_NETWORK_UNIX",
+		3: "PROXY_NETWORK_TCP",
+	}
+	ProxyNetwork_value = map[string]int32{
+		"PROXY_NETWORK_UNSPECIFIED": 0,
+		"PROXY_NETWORK_INHERITED":   1,
+		"PROXY_NETWORK_UNIX":        2,
+		"PROXY_NETWORK_TCP":         3,
+	}
+)
+
+func (x ProxyNetwork) Enum() *ProxyNetwork {
+	p := new(ProxyNetwork)
+	*p = x
+	return p
+}
+
+func (x ProxyNetwork) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ProxyNetwork) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_arupa_proto_enumTypes[1].Descriptor()
+}
+
+func (ProxyNetwork) Type() protoreflect.EnumType {
+	return &file_proto_arupa_proto_enumTypes[1]
+}
+
+func (x ProxyNetwork) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ProxyNetwork.Descriptor instead.
+func (ProxyNetwork) EnumDescriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{1}
+}
+
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
@@ -75,11 +181,9 @@ func (x *User) GetGroups() []string {
 }
 
 type AccessPolicy struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Require any authenticated user when groups is empty.
-	RequireAuth bool `protobuf:"varint,1,opt,name=require_auth,json=requireAuth,proto3" json:"require_auth,omitempty"`
-	// A non-empty list requires membership in at least one group.
-	Groups        []string `protobuf:"bytes,2,rep,name=groups,proto3" json:"groups,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequireAuth   bool                   `protobuf:"varint,1,opt,name=require_auth,json=requireAuth,proto3" json:"require_auth,omitempty"`
+	Groups        []string               `protobuf:"bytes,2,rep,name=groups,proto3" json:"groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -128,30 +232,28 @@ func (x *AccessPolicy) GetGroups() []string {
 	return nil
 }
 
-// ===== HTTP =====
-type HTTPRoute struct {
+type Header struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Method        string                 `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`   // GET/POST/...; empty = any method
-	Pattern       string                 `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"` // e.g. "/hello", "/api/foo/"
-	Access        *AccessPolicy          `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Values        []string               `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HTTPRoute) Reset() {
-	*x = HTTPRoute{}
+func (x *Header) Reset() {
+	*x = Header{}
 	mi := &file_proto_arupa_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HTTPRoute) String() string {
+func (x *Header) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HTTPRoute) ProtoMessage() {}
+func (*Header) ProtoMessage() {}
 
-func (x *HTTPRoute) ProtoReflect() protoreflect.Message {
+func (x *Header) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_arupa_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -163,42 +265,36 @@ func (x *HTTPRoute) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HTTPRoute.ProtoReflect.Descriptor instead.
-func (*HTTPRoute) Descriptor() ([]byte, []int) {
+// Deprecated: Use Header.ProtoReflect.Descriptor instead.
+func (*Header) Descriptor() ([]byte, []int) {
 	return file_proto_arupa_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *HTTPRoute) GetMethod() string {
+func (x *Header) GetName() string {
 	if x != nil {
-		return x.Method
+		return x.Name
 	}
 	return ""
 }
 
-func (x *HTTPRoute) GetPattern() string {
+func (x *Header) GetValues() []string {
 	if x != nil {
-		return x.Pattern
-	}
-	return ""
-}
-
-func (x *HTTPRoute) GetAccess() *AccessPolicy {
-	if x != nil {
-		return x.Access
+		return x.Values
 	}
 	return nil
 }
 
 type HTTPRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RoutePattern  string                 `protobuf:"bytes,1,opt,name=route_pattern,json=routePattern,proto3" json:"route_pattern,omitempty"` // the pattern this request matched
-	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
-	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	Query         string                 `protobuf:"bytes,4,opt,name=query,proto3" json:"query,omitempty"`
-	Headers       map[string]string      `protobuf:"bytes,5,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Body          []byte                 `protobuf:"bytes,6,opt,name=body,proto3" json:"body,omitempty"`
-	RemoteAddr    string                 `protobuf:"bytes,7,opt,name=remote_addr,json=remoteAddr,proto3" json:"remote_addr,omitempty"`
-	User          *User                  `protobuf:"bytes,8,opt,name=user,proto3" json:"user,omitempty"`
+	RouteId       string                 `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3" json:"route_id,omitempty"`
+	RoutePattern  string                 `protobuf:"bytes,2,opt,name=route_pattern,json=routePattern,proto3" json:"route_pattern,omitempty"`
+	Method        string                 `protobuf:"bytes,3,opt,name=method,proto3" json:"method,omitempty"`
+	Path          string                 `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
+	Query         string                 `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	Headers       []*Header              `protobuf:"bytes,6,rep,name=headers,proto3" json:"headers,omitempty"`
+	Body          []byte                 `protobuf:"bytes,7,opt,name=body,proto3" json:"body,omitempty"`
+	RemoteAddr    string                 `protobuf:"bytes,8,opt,name=remote_addr,json=remoteAddr,proto3" json:"remote_addr,omitempty"`
+	User          *User                  `protobuf:"bytes,9,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -233,6 +329,13 @@ func (*HTTPRequest) Descriptor() ([]byte, []int) {
 	return file_proto_arupa_proto_rawDescGZIP(), []int{3}
 }
 
+func (x *HTTPRequest) GetRouteId() string {
+	if x != nil {
+		return x.RouteId
+	}
+	return ""
+}
+
 func (x *HTTPRequest) GetRoutePattern() string {
 	if x != nil {
 		return x.RoutePattern
@@ -261,7 +364,7 @@ func (x *HTTPRequest) GetQuery() string {
 	return ""
 }
 
-func (x *HTTPRequest) GetHeaders() map[string]string {
+func (x *HTTPRequest) GetHeaders() []*Header {
 	if x != nil {
 		return x.Headers
 	}
@@ -292,7 +395,7 @@ func (x *HTTPRequest) GetUser() *User {
 type HTTPResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        int32                  `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
-	Headers       map[string]string      `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Headers       []*Header              `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty"`
 	Body          []byte                 `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -335,7 +438,7 @@ func (x *HTTPResponse) GetStatus() int32 {
 	return 0
 }
 
-func (x *HTTPResponse) GetHeaders() map[string]string {
+func (x *HTTPResponse) GetHeaders() []*Header {
 	if x != nil {
 		return x.Headers
 	}
@@ -349,150 +452,21 @@ func (x *HTTPResponse) GetBody() []byte {
 	return nil
 }
 
-// ===== static files =====
-type StaticMount struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prefix        string                 `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`       // URL path prefix, e.g. "/assets/"
-	Directory     string                 `protobuf:"bytes,2,opt,name=directory,proto3" json:"directory,omitempty"` // host directory path to serve
-	Access        *AccessPolicy          `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StaticMount) Reset() {
-	*x = StaticMount{}
-	mi := &file_proto_arupa_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StaticMount) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StaticMount) ProtoMessage() {}
-
-func (x *StaticMount) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StaticMount.ProtoReflect.Descriptor instead.
-func (*StaticMount) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *StaticMount) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
-	}
-	return ""
-}
-
-func (x *StaticMount) GetDirectory() string {
-	if x != nil {
-		return x.Directory
-	}
-	return ""
-}
-
-func (x *StaticMount) GetAccess() *AccessPolicy {
-	if x != nil {
-		return x.Access
-	}
-	return nil
-}
-
-// ===== socket.io =====
-type SocketNamespace struct {
-	state         protoimpl.MessageState   `protogen:"open.v1"`
-	Name          string                   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`     // e.g. "/hello"
-	Events        []string                 `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"` // events the plugin handles
-	Access        *AccessPolicy            `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
-	EventAccess   map[string]*AccessPolicy `protobuf:"bytes,4,rep,name=event_access,json=eventAccess,proto3" json:"event_access,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // optional event-specific policies
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SocketNamespace) Reset() {
-	*x = SocketNamespace{}
-	mi := &file_proto_arupa_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SocketNamespace) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SocketNamespace) ProtoMessage() {}
-
-func (x *SocketNamespace) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SocketNamespace.ProtoReflect.Descriptor instead.
-func (*SocketNamespace) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *SocketNamespace) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *SocketNamespace) GetEvents() []string {
-	if x != nil {
-		return x.Events
-	}
-	return nil
-}
-
-func (x *SocketNamespace) GetAccess() *AccessPolicy {
-	if x != nil {
-		return x.Access
-	}
-	return nil
-}
-
-func (x *SocketNamespace) GetEventAccess() map[string]*AccessPolicy {
-	if x != nil {
-		return x.EventAccess
-	}
-	return nil
-}
-
 type SocketEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Event         string                 `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
-	SocketId      string                 `protobuf:"bytes,3,opt,name=socket_id,json=socketId,proto3" json:"socket_id,omitempty"`
-	Payload       []byte                 `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"` // JSON-encoded event arguments
-	User          *User                  `protobuf:"bytes,5,opt,name=user,proto3" json:"user,omitempty"`
+	RouteId       string                 `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3" json:"route_id,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Event         string                 `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
+	SocketId      string                 `protobuf:"bytes,4,opt,name=socket_id,json=socketId,proto3" json:"socket_id,omitempty"`
+	Payload       []byte                 `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	User          *User                  `protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SocketEvent) Reset() {
 	*x = SocketEvent{}
-	mi := &file_proto_arupa_proto_msgTypes[7]
+	mi := &file_proto_arupa_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +478,7 @@ func (x *SocketEvent) String() string {
 func (*SocketEvent) ProtoMessage() {}
 
 func (x *SocketEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[7]
+	mi := &file_proto_arupa_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +491,14 @@ func (x *SocketEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SocketEvent.ProtoReflect.Descriptor instead.
 func (*SocketEvent) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{7}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SocketEvent) GetRouteId() string {
+	if x != nil {
+		return x.RouteId
+	}
+	return ""
 }
 
 func (x *SocketEvent) GetNamespace() string {
@@ -558,16 +539,16 @@ func (x *SocketEvent) GetUser() *User {
 type EmitInstruction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"` // socket id, or empty for broadcast to namespace
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	Event         string                 `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
-	Payload       []byte                 `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"` // JSON-encoded emit arguments
+	Payload       []byte                 `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EmitInstruction) Reset() {
 	*x = EmitInstruction{}
-	mi := &file_proto_arupa_proto_msgTypes[8]
+	mi := &file_proto_arupa_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -579,7 +560,7 @@ func (x *EmitInstruction) String() string {
 func (*EmitInstruction) ProtoMessage() {}
 
 func (x *EmitInstruction) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[8]
+	mi := &file_proto_arupa_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -592,7 +573,7 @@ func (x *EmitInstruction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmitInstruction.ProtoReflect.Descriptor instead.
 func (*EmitInstruction) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{8}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *EmitInstruction) GetNamespace() string {
@@ -624,17 +605,15 @@ func (x *EmitInstruction) GetPayload() []byte {
 }
 
 type SocketEventReply struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Emits returned in-reply (used by WASM where the plugin cannot push
-	// spontaneously). gRPC plugins may also use the Host.Emit callback.
-	Emits         []*EmitInstruction `protobuf:"bytes,1,rep,name=emits,proto3" json:"emits,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Emits         []*EmitInstruction     `protobuf:"bytes,1,rep,name=emits,proto3" json:"emits,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SocketEventReply) Reset() {
 	*x = SocketEventReply{}
-	mi := &file_proto_arupa_proto_msgTypes[9]
+	mi := &file_proto_arupa_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -646,7 +625,7 @@ func (x *SocketEventReply) String() string {
 func (*SocketEventReply) ProtoMessage() {}
 
 func (x *SocketEventReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[9]
+	mi := &file_proto_arupa_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -659,7 +638,7 @@ func (x *SocketEventReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SocketEventReply.ProtoReflect.Descriptor instead.
 func (*SocketEventReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{9}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SocketEventReply) GetEmits() []*EmitInstruction {
@@ -669,20 +648,89 @@ func (x *SocketEventReply) GetEmits() []*EmitInstruction {
 	return nil
 }
 
-// ===== registration =====
+type InheritedListener struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Fd            uint32                 `protobuf:"varint,2,opt,name=fd,proto3" json:"fd,omitempty"`
+	Network       string                 `protobuf:"bytes,3,opt,name=network,proto3" json:"network,omitempty"`
+	Address       string                 `protobuf:"bytes,4,opt,name=address,proto3" json:"address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InheritedListener) Reset() {
+	*x = InheritedListener{}
+	mi := &file_proto_arupa_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InheritedListener) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InheritedListener) ProtoMessage() {}
+
+func (x *InheritedListener) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InheritedListener.ProtoReflect.Descriptor instead.
+func (*InheritedListener) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *InheritedListener) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *InheritedListener) GetFd() uint32 {
+	if x != nil {
+		return x.Fd
+	}
+	return 0
+}
+
+func (x *InheritedListener) GetNetwork() string {
+	if x != nil {
+		return x.Network
+	}
+	return ""
+}
+
+func (x *InheritedListener) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
 type RegisterRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId        string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	HostCallbackAddr  string                 `protobuf:"bytes,2,opt,name=host_callback_addr,json=hostCallbackAddr,proto3" json:"host_callback_addr,omitempty"`                             // gRPC plugins dial this to call Host.*; WASM ignores
-	HostCallbackToken string                 `protobuf:"bytes,3,opt,name=host_callback_token,json=hostCallbackToken,proto3" json:"host_callback_token,omitempty"`                          // auth token for host callbacks; WASM ignores
-	Params            map[string]string      `protobuf:"bytes,4,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // host-provided config params from [Plugins.<name>.params]
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	Params     map[string]string      `protobuf:"bytes,2,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Listeners  []*InheritedListener   `protobuf:"bytes,3,rep,name=listeners,proto3" json:"listeners,omitempty"`
+	// A github.com/hashicorp/go-plugin GRPCBroker stream served by the kernel.
+	// gRPC services dial this ID through their broker to call Host.*.
+	HostBrokerId  uint32 `protobuf:"varint,4,opt,name=host_broker_id,json=hostBrokerId,proto3" json:"host_broker_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[10]
+	mi := &file_proto_arupa_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -694,7 +742,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[10]
+	mi := &file_proto_arupa_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -707,26 +755,12 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{10}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RegisterRequest) GetInstanceId() string {
 	if x != nil {
 		return x.InstanceId
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetHostCallbackAddr() string {
-	if x != nil {
-		return x.HostCallbackAddr
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetHostCallbackToken() string {
-	if x != nil {
-		return x.HostCallbackToken
 	}
 	return ""
 }
@@ -738,20 +772,31 @@ func (x *RegisterRequest) GetParams() map[string]string {
 	return nil
 }
 
+func (x *RegisterRequest) GetListeners() []*InheritedListener {
+	if x != nil {
+		return x.Listeners
+	}
+	return nil
+}
+
+func (x *RegisterRequest) GetHostBrokerId() uint32 {
+	if x != nil {
+		return x.HostBrokerId
+	}
+	return 0
+}
+
 type RegisterReply struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Name             string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version          string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	HttpRoutes       []*HTTPRoute           `protobuf:"bytes,3,rep,name=http_routes,json=httpRoutes,proto3" json:"http_routes,omitempty"`
-	SocketNamespaces []*SocketNamespace     `protobuf:"bytes,4,rep,name=socket_namespaces,json=socketNamespaces,proto3" json:"socket_namespaces,omitempty"`
-	StaticMounts     []*StaticMount         `protobuf:"bytes,5,rep,name=static_mounts,json=staticMounts,proto3" json:"static_mounts,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RegisterReply) Reset() {
 	*x = RegisterReply{}
-	mi := &file_proto_arupa_proto_msgTypes[11]
+	mi := &file_proto_arupa_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +808,7 @@ func (x *RegisterReply) String() string {
 func (*RegisterReply) ProtoMessage() {}
 
 func (x *RegisterReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[11]
+	mi := &file_proto_arupa_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +821,7 @@ func (x *RegisterReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterReply.ProtoReflect.Descriptor instead.
 func (*RegisterReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{11}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RegisterReply) GetName() string {
@@ -793,28 +838,730 @@ func (x *RegisterReply) GetVersion() string {
 	return ""
 }
 
-func (x *RegisterReply) GetHttpRoutes() []*HTTPRoute {
+type StaticTransport struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StaticTransport) Reset() {
+	*x = StaticTransport{}
+	mi := &file_proto_arupa_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StaticTransport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StaticTransport) ProtoMessage() {}
+
+func (x *StaticTransport) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[11]
 	if x != nil {
-		return x.HttpRoutes
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StaticTransport.ProtoReflect.Descriptor instead.
+func (*StaticTransport) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *StaticTransport) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+type ProxyTransport struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Network       ProxyNetwork           `protobuf:"varint,1,opt,name=network,proto3,enum=arupa.service.v2.ProxyNetwork" json:"network,omitempty"`
+	Address       string                 `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	Scheme        string                 `protobuf:"bytes,3,opt,name=scheme,proto3" json:"scheme,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProxyTransport) Reset() {
+	*x = ProxyTransport{}
+	mi := &file_proto_arupa_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProxyTransport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProxyTransport) ProtoMessage() {}
+
+func (x *ProxyTransport) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProxyTransport.ProtoReflect.Descriptor instead.
+func (*ProxyTransport) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ProxyTransport) GetNetwork() ProxyNetwork {
+	if x != nil {
+		return x.Network
+	}
+	return ProxyNetwork_PROXY_NETWORK_UNSPECIFIED
+}
+
+func (x *ProxyTransport) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *ProxyTransport) GetScheme() string {
+	if x != nil {
+		return x.Scheme
+	}
+	return ""
+}
+
+type Transport struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type  TransportType          `protobuf:"varint,2,opt,name=type,proto3,enum=arupa.service.v2.TransportType" json:"type,omitempty"`
+	// Types that are valid to be assigned to Config:
+	//
+	//	*Transport_Static
+	//	*Transport_Proxy
+	Config        isTransport_Config `protobuf_oneof:"config"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Transport) Reset() {
+	*x = Transport{}
+	mi := &file_proto_arupa_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Transport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Transport) ProtoMessage() {}
+
+func (x *Transport) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Transport.ProtoReflect.Descriptor instead.
+func (*Transport) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *Transport) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Transport) GetType() TransportType {
+	if x != nil {
+		return x.Type
+	}
+	return TransportType_TRANSPORT_TYPE_UNSPECIFIED
+}
+
+func (x *Transport) GetConfig() isTransport_Config {
+	if x != nil {
+		return x.Config
 	}
 	return nil
 }
 
-func (x *RegisterReply) GetSocketNamespaces() []*SocketNamespace {
+func (x *Transport) GetStatic() *StaticTransport {
 	if x != nil {
-		return x.SocketNamespaces
+		if x, ok := x.Config.(*Transport_Static); ok {
+			return x.Static
+		}
 	}
 	return nil
 }
 
-func (x *RegisterReply) GetStaticMounts() []*StaticMount {
+func (x *Transport) GetProxy() *ProxyTransport {
 	if x != nil {
-		return x.StaticMounts
+		if x, ok := x.Config.(*Transport_Proxy); ok {
+			return x.Proxy
+		}
 	}
 	return nil
 }
 
-// ===== KV =====
+type isTransport_Config interface {
+	isTransport_Config()
+}
+
+type Transport_Static struct {
+	Static *StaticTransport `protobuf:"bytes,3,opt,name=static,proto3,oneof"`
+}
+
+type Transport_Proxy struct {
+	Proxy *ProxyTransport `protobuf:"bytes,4,opt,name=proxy,proto3,oneof"`
+}
+
+func (*Transport_Static) isTransport_Config() {}
+
+func (*Transport_Proxy) isTransport_Config() {}
+
+type HTTPRoute struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Method        string                 `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	Pattern       string                 `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"`
+	Access        *AccessPolicy          `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HTTPRoute) Reset() {
+	*x = HTTPRoute{}
+	mi := &file_proto_arupa_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HTTPRoute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HTTPRoute) ProtoMessage() {}
+
+func (x *HTTPRoute) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HTTPRoute.ProtoReflect.Descriptor instead.
+func (*HTTPRoute) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *HTTPRoute) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *HTTPRoute) GetPattern() string {
+	if x != nil {
+		return x.Pattern
+	}
+	return ""
+}
+
+func (x *HTTPRoute) GetAccess() *AccessPolicy {
+	if x != nil {
+		return x.Access
+	}
+	return nil
+}
+
+type SocketIORoute struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Namespace     string                   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Events        []string                 `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"`
+	Access        *AccessPolicy            `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+	EventAccess   map[string]*AccessPolicy `protobuf:"bytes,4,rep,name=event_access,json=eventAccess,proto3" json:"event_access,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SocketIORoute) Reset() {
+	*x = SocketIORoute{}
+	mi := &file_proto_arupa_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SocketIORoute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SocketIORoute) ProtoMessage() {}
+
+func (x *SocketIORoute) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SocketIORoute.ProtoReflect.Descriptor instead.
+func (*SocketIORoute) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *SocketIORoute) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *SocketIORoute) GetEvents() []string {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+func (x *SocketIORoute) GetAccess() *AccessPolicy {
+	if x != nil {
+		return x.Access
+	}
+	return nil
+}
+
+func (x *SocketIORoute) GetEventAccess() map[string]*AccessPolicy {
+	if x != nil {
+		return x.EventAccess
+	}
+	return nil
+}
+
+type Route struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TransportId string                 `protobuf:"bytes,2,opt,name=transport_id,json=transportId,proto3" json:"transport_id,omitempty"`
+	// Types that are valid to be assigned to Route:
+	//
+	//	*Route_Http
+	//	*Route_SocketIo
+	Route         isRoute_Route `protobuf_oneof:"route"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Route) Reset() {
+	*x = Route{}
+	mi := &file_proto_arupa_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Route) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Route) ProtoMessage() {}
+
+func (x *Route) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Route.ProtoReflect.Descriptor instead.
+func (*Route) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *Route) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Route) GetTransportId() string {
+	if x != nil {
+		return x.TransportId
+	}
+	return ""
+}
+
+func (x *Route) GetRoute() isRoute_Route {
+	if x != nil {
+		return x.Route
+	}
+	return nil
+}
+
+func (x *Route) GetHttp() *HTTPRoute {
+	if x != nil {
+		if x, ok := x.Route.(*Route_Http); ok {
+			return x.Http
+		}
+	}
+	return nil
+}
+
+func (x *Route) GetSocketIo() *SocketIORoute {
+	if x != nil {
+		if x, ok := x.Route.(*Route_SocketIo); ok {
+			return x.SocketIo
+		}
+	}
+	return nil
+}
+
+type isRoute_Route interface {
+	isRoute_Route()
+}
+
+type Route_Http struct {
+	Http *HTTPRoute `protobuf:"bytes,3,opt,name=http,proto3,oneof"`
+}
+
+type Route_SocketIo struct {
+	SocketIo *SocketIORoute `protobuf:"bytes,4,opt,name=socket_io,json=socketIo,proto3,oneof"`
+}
+
+func (*Route_Http) isRoute_Route() {}
+
+func (*Route_SocketIo) isRoute_Route() {}
+
+type RegisterTransportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Transport     *Transport             `protobuf:"bytes,1,opt,name=transport,proto3" json:"transport,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterTransportRequest) Reset() {
+	*x = RegisterTransportRequest{}
+	mi := &file_proto_arupa_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterTransportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterTransportRequest) ProtoMessage() {}
+
+func (x *RegisterTransportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterTransportRequest.ProtoReflect.Descriptor instead.
+func (*RegisterTransportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RegisterTransportRequest) GetTransport() *Transport {
+	if x != nil {
+		return x.Transport
+	}
+	return nil
+}
+
+type UnregisterTransportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnregisterTransportRequest) Reset() {
+	*x = UnregisterTransportRequest{}
+	mi := &file_proto_arupa_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnregisterTransportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnregisterTransportRequest) ProtoMessage() {}
+
+func (x *UnregisterTransportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnregisterTransportRequest.ProtoReflect.Descriptor instead.
+func (*UnregisterTransportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *UnregisterTransportRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RegisterRoutesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Routes        []*Route               `protobuf:"bytes,1,rep,name=routes,proto3" json:"routes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterRoutesRequest) Reset() {
+	*x = RegisterRoutesRequest{}
+	mi := &file_proto_arupa_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterRoutesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterRoutesRequest) ProtoMessage() {}
+
+func (x *RegisterRoutesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterRoutesRequest.ProtoReflect.Descriptor instead.
+func (*RegisterRoutesRequest) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *RegisterRoutesRequest) GetRoutes() []*Route {
+	if x != nil {
+		return x.Routes
+	}
+	return nil
+}
+
+type UnregisterRoutesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ids           []string               `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnregisterRoutesRequest) Reset() {
+	*x = UnregisterRoutesRequest{}
+	mi := &file_proto_arupa_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnregisterRoutesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnregisterRoutesRequest) ProtoMessage() {}
+
+func (x *UnregisterRoutesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnregisterRoutesRequest.ProtoReflect.Descriptor instead.
+func (*UnregisterRoutesRequest) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UnregisterRoutesRequest) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+type RegistrationFailure struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegistrationFailure) Reset() {
+	*x = RegistrationFailure{}
+	mi := &file_proto_arupa_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegistrationFailure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegistrationFailure) ProtoMessage() {}
+
+func (x *RegistrationFailure) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegistrationFailure.ProtoReflect.Descriptor instead.
+func (*RegistrationFailure) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *RegistrationFailure) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RegistrationFailure) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type RegistrationReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Registered    []string               `protobuf:"bytes,1,rep,name=registered,proto3" json:"registered,omitempty"`
+	Failures      []*RegistrationFailure `protobuf:"bytes,2,rep,name=failures,proto3" json:"failures,omitempty"`
+	Degraded      bool                   `protobuf:"varint,3,opt,name=degraded,proto3" json:"degraded,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegistrationReply) Reset() {
+	*x = RegistrationReply{}
+	mi := &file_proto_arupa_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegistrationReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegistrationReply) ProtoMessage() {}
+
+func (x *RegistrationReply) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegistrationReply.ProtoReflect.Descriptor instead.
+func (*RegistrationReply) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *RegistrationReply) GetRegistered() []string {
+	if x != nil {
+		return x.Registered
+	}
+	return nil
+}
+
+func (x *RegistrationReply) GetFailures() []*RegistrationFailure {
+	if x != nil {
+		return x.Failures
+	}
+	return nil
+}
+
+func (x *RegistrationReply) GetDegraded() bool {
+	if x != nil {
+		return x.Degraded
+	}
+	return false
+}
+
+func (x *RegistrationReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type KVGetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
@@ -825,7 +1572,7 @@ type KVGetRequest struct {
 
 func (x *KVGetRequest) Reset() {
 	*x = KVGetRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[12]
+	mi := &file_proto_arupa_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -837,7 +1584,7 @@ func (x *KVGetRequest) String() string {
 func (*KVGetRequest) ProtoMessage() {}
 
 func (x *KVGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[12]
+	mi := &file_proto_arupa_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -850,7 +1597,7 @@ func (x *KVGetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVGetRequest.ProtoReflect.Descriptor instead.
 func (*KVGetRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{12}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *KVGetRequest) GetNamespace() string {
@@ -877,7 +1624,7 @@ type KVGetReply struct {
 
 func (x *KVGetReply) Reset() {
 	*x = KVGetReply{}
-	mi := &file_proto_arupa_proto_msgTypes[13]
+	mi := &file_proto_arupa_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -889,7 +1636,7 @@ func (x *KVGetReply) String() string {
 func (*KVGetReply) ProtoMessage() {}
 
 func (x *KVGetReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[13]
+	mi := &file_proto_arupa_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -902,7 +1649,7 @@ func (x *KVGetReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVGetReply.ProtoReflect.Descriptor instead.
 func (*KVGetReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{13}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *KVGetReply) GetFound() bool {
@@ -930,7 +1677,7 @@ type KVSetRequest struct {
 
 func (x *KVSetRequest) Reset() {
 	*x = KVSetRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[14]
+	mi := &file_proto_arupa_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -942,7 +1689,7 @@ func (x *KVSetRequest) String() string {
 func (*KVSetRequest) ProtoMessage() {}
 
 func (x *KVSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[14]
+	mi := &file_proto_arupa_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -955,7 +1702,7 @@ func (x *KVSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVSetRequest.ProtoReflect.Descriptor instead.
 func (*KVSetRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{14}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *KVSetRequest) GetNamespace() string {
@@ -988,7 +1735,7 @@ type KVSetReply struct {
 
 func (x *KVSetReply) Reset() {
 	*x = KVSetReply{}
-	mi := &file_proto_arupa_proto_msgTypes[15]
+	mi := &file_proto_arupa_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1000,7 +1747,7 @@ func (x *KVSetReply) String() string {
 func (*KVSetReply) ProtoMessage() {}
 
 func (x *KVSetReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[15]
+	mi := &file_proto_arupa_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1013,7 +1760,7 @@ func (x *KVSetReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVSetReply.ProtoReflect.Descriptor instead.
 func (*KVSetReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{15}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *KVSetReply) GetError() string {
@@ -1033,7 +1780,7 @@ type KVDeleteRequest struct {
 
 func (x *KVDeleteRequest) Reset() {
 	*x = KVDeleteRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[16]
+	mi := &file_proto_arupa_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1045,7 +1792,7 @@ func (x *KVDeleteRequest) String() string {
 func (*KVDeleteRequest) ProtoMessage() {}
 
 func (x *KVDeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[16]
+	mi := &file_proto_arupa_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1058,7 +1805,7 @@ func (x *KVDeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVDeleteRequest.ProtoReflect.Descriptor instead.
 func (*KVDeleteRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{16}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *KVDeleteRequest) GetNamespace() string {
@@ -1084,7 +1831,7 @@ type KVDeleteReply struct {
 
 func (x *KVDeleteReply) Reset() {
 	*x = KVDeleteReply{}
-	mi := &file_proto_arupa_proto_msgTypes[17]
+	mi := &file_proto_arupa_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1096,7 +1843,7 @@ func (x *KVDeleteReply) String() string {
 func (*KVDeleteReply) ProtoMessage() {}
 
 func (x *KVDeleteReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[17]
+	mi := &file_proto_arupa_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1109,7 +1856,7 @@ func (x *KVDeleteReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVDeleteReply.ProtoReflect.Descriptor instead.
 func (*KVDeleteReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{17}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *KVDeleteReply) GetError() string {
@@ -1128,7 +1875,7 @@ type KVListRequest struct {
 
 func (x *KVListRequest) Reset() {
 	*x = KVListRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[18]
+	mi := &file_proto_arupa_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1140,7 +1887,7 @@ func (x *KVListRequest) String() string {
 func (*KVListRequest) ProtoMessage() {}
 
 func (x *KVListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[18]
+	mi := &file_proto_arupa_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1153,7 +1900,7 @@ func (x *KVListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVListRequest.ProtoReflect.Descriptor instead.
 func (*KVListRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{18}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *KVListRequest) GetNamespace() string {
@@ -1172,7 +1919,7 @@ type KVListReply struct {
 
 func (x *KVListReply) Reset() {
 	*x = KVListReply{}
-	mi := &file_proto_arupa_proto_msgTypes[19]
+	mi := &file_proto_arupa_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1184,7 +1931,7 @@ func (x *KVListReply) String() string {
 func (*KVListReply) ProtoMessage() {}
 
 func (x *KVListReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[19]
+	mi := &file_proto_arupa_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1197,7 +1944,7 @@ func (x *KVListReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KVListReply.ProtoReflect.Descriptor instead.
 func (*KVListReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{19}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *KVListReply) GetKeys() []string {
@@ -1216,7 +1963,7 @@ type EmitReply struct {
 
 func (x *EmitReply) Reset() {
 	*x = EmitReply{}
-	mi := &file_proto_arupa_proto_msgTypes[20]
+	mi := &file_proto_arupa_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1228,7 +1975,7 @@ func (x *EmitReply) String() string {
 func (*EmitReply) ProtoMessage() {}
 
 func (x *EmitReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[20]
+	mi := &file_proto_arupa_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1241,7 +1988,7 @@ func (x *EmitReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmitReply.ProtoReflect.Descriptor instead.
 func (*EmitReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{20}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *EmitReply) GetError() string {
@@ -1251,8 +1998,6 @@ func (x *EmitReply) GetError() string {
 	return ""
 }
 
-// ===== persisted plugin params =====
-// The caller is identified by the authenticated host callback context.
 type ParamsGetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1261,7 +2006,7 @@ type ParamsGetRequest struct {
 
 func (x *ParamsGetRequest) Reset() {
 	*x = ParamsGetRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[21]
+	mi := &file_proto_arupa_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1273,7 +2018,7 @@ func (x *ParamsGetRequest) String() string {
 func (*ParamsGetRequest) ProtoMessage() {}
 
 func (x *ParamsGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[21]
+	mi := &file_proto_arupa_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1286,7 +2031,7 @@ func (x *ParamsGetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParamsGetRequest.ProtoReflect.Descriptor instead.
 func (*ParamsGetRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{21}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{32}
 }
 
 type ParamsGetReply struct {
@@ -1299,7 +2044,7 @@ type ParamsGetReply struct {
 
 func (x *ParamsGetReply) Reset() {
 	*x = ParamsGetReply{}
-	mi := &file_proto_arupa_proto_msgTypes[22]
+	mi := &file_proto_arupa_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1311,7 +2056,7 @@ func (x *ParamsGetReply) String() string {
 func (*ParamsGetReply) ProtoMessage() {}
 
 func (x *ParamsGetReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[22]
+	mi := &file_proto_arupa_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1324,7 +2069,7 @@ func (x *ParamsGetReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParamsGetReply.ProtoReflect.Descriptor instead.
 func (*ParamsGetReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{22}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ParamsGetReply) GetParams() map[string]string {
@@ -1351,7 +2096,7 @@ type ParamsPatchRequest struct {
 
 func (x *ParamsPatchRequest) Reset() {
 	*x = ParamsPatchRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[23]
+	mi := &file_proto_arupa_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1363,7 +2108,7 @@ func (x *ParamsPatchRequest) String() string {
 func (*ParamsPatchRequest) ProtoMessage() {}
 
 func (x *ParamsPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[23]
+	mi := &file_proto_arupa_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1376,7 +2121,7 @@ func (x *ParamsPatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParamsPatchRequest.ProtoReflect.Descriptor instead.
 func (*ParamsPatchRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{23}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ParamsPatchRequest) GetSet() map[string]string {
@@ -1402,7 +2147,7 @@ type ParamsPatchReply struct {
 
 func (x *ParamsPatchReply) Reset() {
 	*x = ParamsPatchReply{}
-	mi := &file_proto_arupa_proto_msgTypes[24]
+	mi := &file_proto_arupa_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1414,7 +2159,7 @@ func (x *ParamsPatchReply) String() string {
 func (*ParamsPatchReply) ProtoMessage() {}
 
 func (x *ParamsPatchReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[24]
+	mi := &file_proto_arupa_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1427,7 +2172,7 @@ func (x *ParamsPatchReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParamsPatchReply.ProtoReflect.Descriptor instead.
 func (*ParamsPatchReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{24}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ParamsPatchReply) GetError() string {
@@ -1437,32 +2182,31 @@ func (x *ParamsPatchReply) GetError() string {
 	return ""
 }
 
-// ===== plugin messages =====
-type PluginMessage struct {
+type ServiceMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"` // set by host to the registered plugin name; caller-supplied values are ignored
-	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"` // registered plugin name to deliver to
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	Topic         string                 `protobuf:"bytes,3,opt,name=topic,proto3" json:"topic,omitempty"`
 	Payload       []byte                 `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PluginMessage) Reset() {
-	*x = PluginMessage{}
-	mi := &file_proto_arupa_proto_msgTypes[25]
+func (x *ServiceMessage) Reset() {
+	*x = ServiceMessage{}
+	mi := &file_proto_arupa_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PluginMessage) String() string {
+func (x *ServiceMessage) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PluginMessage) ProtoMessage() {}
+func (*ServiceMessage) ProtoMessage() {}
 
-func (x *PluginMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[25]
+func (x *ServiceMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1473,40 +2217,40 @@ func (x *PluginMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PluginMessage.ProtoReflect.Descriptor instead.
-func (*PluginMessage) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{25}
+// Deprecated: Use ServiceMessage.ProtoReflect.Descriptor instead.
+func (*ServiceMessage) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{36}
 }
 
-func (x *PluginMessage) GetSource() string {
+func (x *ServiceMessage) GetSource() string {
 	if x != nil {
 		return x.Source
 	}
 	return ""
 }
 
-func (x *PluginMessage) GetTarget() string {
+func (x *ServiceMessage) GetTarget() string {
 	if x != nil {
 		return x.Target
 	}
 	return ""
 }
 
-func (x *PluginMessage) GetTopic() string {
+func (x *ServiceMessage) GetTopic() string {
 	if x != nil {
 		return x.Topic
 	}
 	return ""
 }
 
-func (x *PluginMessage) GetPayload() []byte {
+func (x *ServiceMessage) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-type PluginMessageReply struct {
+type ServiceMessageReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -1514,21 +2258,21 @@ type PluginMessageReply struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PluginMessageReply) Reset() {
-	*x = PluginMessageReply{}
-	mi := &file_proto_arupa_proto_msgTypes[26]
+func (x *ServiceMessageReply) Reset() {
+	*x = ServiceMessageReply{}
+	mi := &file_proto_arupa_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PluginMessageReply) String() string {
+func (x *ServiceMessageReply) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PluginMessageReply) ProtoMessage() {}
+func (*ServiceMessageReply) ProtoMessage() {}
 
-func (x *PluginMessageReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[26]
+func (x *ServiceMessageReply) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_arupa_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1539,19 +2283,19 @@ func (x *PluginMessageReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PluginMessageReply.ProtoReflect.Descriptor instead.
-func (*PluginMessageReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{26}
+// Deprecated: Use ServiceMessageReply.ProtoReflect.Descriptor instead.
+func (*ServiceMessageReply) Descriptor() ([]byte, []int) {
+	return file_proto_arupa_proto_rawDescGZIP(), []int{37}
 }
 
-func (x *PluginMessageReply) GetError() string {
+func (x *ServiceMessageReply) GetError() string {
 	if x != nil {
 		return x.Error
 	}
 	return ""
 }
 
-func (x *PluginMessageReply) GetMessage() string {
+func (x *ServiceMessageReply) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -1568,7 +2312,7 @@ type LogRequest struct {
 
 func (x *LogRequest) Reset() {
 	*x = LogRequest{}
-	mi := &file_proto_arupa_proto_msgTypes[27]
+	mi := &file_proto_arupa_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1580,7 +2324,7 @@ func (x *LogRequest) String() string {
 func (*LogRequest) ProtoMessage() {}
 
 func (x *LogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[27]
+	mi := &file_proto_arupa_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1593,7 +2337,7 @@ func (x *LogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogRequest.ProtoReflect.Descriptor instead.
 func (*LogRequest) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{27}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *LogRequest) GetLevel() string {
@@ -1618,7 +2362,7 @@ type LogReply struct {
 
 func (x *LogReply) Reset() {
 	*x = LogReply{}
-	mi := &file_proto_arupa_proto_msgTypes[28]
+	mi := &file_proto_arupa_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1630,7 +2374,7 @@ func (x *LogReply) String() string {
 func (*LogReply) ProtoMessage() {}
 
 func (x *LogReply) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_arupa_proto_msgTypes[28]
+	mi := &file_proto_arupa_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1643,85 +2387,117 @@ func (x *LogReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogReply.ProtoReflect.Descriptor instead.
 func (*LogReply) Descriptor() ([]byte, []int) {
-	return file_proto_arupa_proto_rawDescGZIP(), []int{28}
+	return file_proto_arupa_proto_rawDescGZIP(), []int{39}
 }
 
 var File_proto_arupa_proto protoreflect.FileDescriptor
 
 const file_proto_arupa_proto_rawDesc = "" +
 	"\n" +
-	"\x11proto/arupa.proto\x12\x0farupa.plugin.v1\":\n" +
+	"\x11proto/arupa.proto\x12\x10arupa.service.v2\":\n" +
 	"\x04User\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x16\n" +
 	"\x06groups\x18\x02 \x03(\tR\x06groups\"I\n" +
 	"\fAccessPolicy\x12!\n" +
 	"\frequire_auth\x18\x01 \x01(\bR\vrequireAuth\x12\x16\n" +
-	"\x06groups\x18\x02 \x03(\tR\x06groups\"t\n" +
-	"\tHTTPRoute\x12\x16\n" +
-	"\x06method\x18\x01 \x01(\tR\x06method\x12\x18\n" +
-	"\apattern\x18\x02 \x01(\tR\apattern\x125\n" +
-	"\x06access\x18\x03 \x01(\v2\x1d.arupa.plugin.v1.AccessPolicyR\x06access\"\xd5\x02\n" +
-	"\vHTTPRequest\x12#\n" +
-	"\rroute_pattern\x18\x01 \x01(\tR\froutePattern\x12\x16\n" +
-	"\x06method\x18\x02 \x01(\tR\x06method\x12\x12\n" +
-	"\x04path\x18\x03 \x01(\tR\x04path\x12\x14\n" +
-	"\x05query\x18\x04 \x01(\tR\x05query\x12C\n" +
-	"\aheaders\x18\x05 \x03(\v2).arupa.plugin.v1.HTTPRequest.HeadersEntryR\aheaders\x12\x12\n" +
-	"\x04body\x18\x06 \x01(\fR\x04body\x12\x1f\n" +
-	"\vremote_addr\x18\a \x01(\tR\n" +
-	"remoteAddr\x12)\n" +
-	"\x04user\x18\b \x01(\v2\x15.arupa.plugin.v1.UserR\x04user\x1a:\n" +
-	"\fHeadersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbc\x01\n" +
-	"\fHTTPResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\x05R\x06status\x12D\n" +
-	"\aheaders\x18\x02 \x03(\v2*.arupa.plugin.v1.HTTPResponse.HeadersEntryR\aheaders\x12\x12\n" +
-	"\x04body\x18\x03 \x01(\fR\x04body\x1a:\n" +
-	"\fHeadersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"z\n" +
-	"\vStaticMount\x12\x16\n" +
-	"\x06prefix\x18\x01 \x01(\tR\x06prefix\x12\x1c\n" +
-	"\tdirectory\x18\x02 \x01(\tR\tdirectory\x125\n" +
-	"\x06access\x18\x03 \x01(\v2\x1d.arupa.plugin.v1.AccessPolicyR\x06access\"\xa9\x02\n" +
-	"\x0fSocketNamespace\x12\x12\n" +
+	"\x06groups\x18\x02 \x03(\tR\x06groups\"4\n" +
+	"\x06Header\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
-	"\x06events\x18\x02 \x03(\tR\x06events\x125\n" +
-	"\x06access\x18\x03 \x01(\v2\x1d.arupa.plugin.v1.AccessPolicyR\x06access\x12T\n" +
-	"\fevent_access\x18\x04 \x03(\v21.arupa.plugin.v1.SocketNamespace.EventAccessEntryR\veventAccess\x1a]\n" +
-	"\x10EventAccessEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x123\n" +
-	"\x05value\x18\x02 \x01(\v2\x1d.arupa.plugin.v1.AccessPolicyR\x05value:\x028\x01\"\xa3\x01\n" +
-	"\vSocketEvent\x12\x1c\n" +
-	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x14\n" +
-	"\x05event\x18\x02 \x01(\tR\x05event\x12\x1b\n" +
-	"\tsocket_id\x18\x03 \x01(\tR\bsocketId\x12\x18\n" +
-	"\apayload\x18\x04 \x01(\fR\apayload\x12)\n" +
-	"\x04user\x18\x05 \x01(\v2\x15.arupa.plugin.v1.UserR\x04user\"w\n" +
+	"\x06values\x18\x02 \x03(\tR\x06values\"\xa4\x02\n" +
+	"\vHTTPRequest\x12\x19\n" +
+	"\broute_id\x18\x01 \x01(\tR\arouteId\x12#\n" +
+	"\rroute_pattern\x18\x02 \x01(\tR\froutePattern\x12\x16\n" +
+	"\x06method\x18\x03 \x01(\tR\x06method\x12\x12\n" +
+	"\x04path\x18\x04 \x01(\tR\x04path\x12\x14\n" +
+	"\x05query\x18\x05 \x01(\tR\x05query\x122\n" +
+	"\aheaders\x18\x06 \x03(\v2\x18.arupa.service.v2.HeaderR\aheaders\x12\x12\n" +
+	"\x04body\x18\a \x01(\fR\x04body\x12\x1f\n" +
+	"\vremote_addr\x18\b \x01(\tR\n" +
+	"remoteAddr\x12*\n" +
+	"\x04user\x18\t \x01(\v2\x16.arupa.service.v2.UserR\x04user\"n\n" +
+	"\fHTTPResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\x05R\x06status\x122\n" +
+	"\aheaders\x18\x02 \x03(\v2\x18.arupa.service.v2.HeaderR\aheaders\x12\x12\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body\"\xbf\x01\n" +
+	"\vSocketEvent\x12\x19\n" +
+	"\broute_id\x18\x01 \x01(\tR\arouteId\x12\x1c\n" +
+	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12\x14\n" +
+	"\x05event\x18\x03 \x01(\tR\x05event\x12\x1b\n" +
+	"\tsocket_id\x18\x04 \x01(\tR\bsocketId\x12\x18\n" +
+	"\apayload\x18\x05 \x01(\fR\apayload\x12*\n" +
+	"\x04user\x18\x06 \x01(\v2\x16.arupa.service.v2.UserR\x04user\"w\n" +
 	"\x0fEmitInstruction\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x14\n" +
 	"\x05event\x18\x03 \x01(\tR\x05event\x12\x18\n" +
-	"\apayload\x18\x04 \x01(\fR\apayload\"J\n" +
-	"\x10SocketEventReply\x126\n" +
-	"\x05emits\x18\x01 \x03(\v2 .arupa.plugin.v1.EmitInstructionR\x05emits\"\x91\x02\n" +
+	"\apayload\x18\x04 \x01(\fR\apayload\"K\n" +
+	"\x10SocketEventReply\x127\n" +
+	"\x05emits\x18\x01 \x03(\v2!.arupa.service.v2.EmitInstructionR\x05emits\"g\n" +
+	"\x11InheritedListener\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x0e\n" +
+	"\x02fd\x18\x02 \x01(\rR\x02fd\x12\x18\n" +
+	"\anetwork\x18\x03 \x01(\tR\anetwork\x12\x18\n" +
+	"\aaddress\x18\x04 \x01(\tR\aaddress\"\x9d\x02\n" +
 	"\x0fRegisterRequest\x12\x1f\n" +
 	"\vinstance_id\x18\x01 \x01(\tR\n" +
-	"instanceId\x12,\n" +
-	"\x12host_callback_addr\x18\x02 \x01(\tR\x10hostCallbackAddr\x12.\n" +
-	"\x13host_callback_token\x18\x03 \x01(\tR\x11hostCallbackToken\x12D\n" +
-	"\x06params\x18\x04 \x03(\v2,.arupa.plugin.v1.RegisterRequest.ParamsEntryR\x06params\x1a9\n" +
+	"instanceId\x12E\n" +
+	"\x06params\x18\x02 \x03(\v2-.arupa.service.v2.RegisterRequest.ParamsEntryR\x06params\x12A\n" +
+	"\tlisteners\x18\x03 \x03(\v2#.arupa.service.v2.InheritedListenerR\tlisteners\x12$\n" +
+	"\x0ehost_broker_id\x18\x04 \x01(\rR\fhostBrokerId\x1a9\n" +
 	"\vParamsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8c\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"=\n" +
 	"\rRegisterReply\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12;\n" +
-	"\vhttp_routes\x18\x03 \x03(\v2\x1a.arupa.plugin.v1.HTTPRouteR\n" +
-	"httpRoutes\x12M\n" +
-	"\x11socket_namespaces\x18\x04 \x03(\v2 .arupa.plugin.v1.SocketNamespaceR\x10socketNamespaces\x12A\n" +
-	"\rstatic_mounts\x18\x05 \x03(\v2\x1c.arupa.plugin.v1.StaticMountR\fstaticMounts\">\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\")\n" +
+	"\x0fStaticTransport\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\"|\n" +
+	"\x0eProxyTransport\x128\n" +
+	"\anetwork\x18\x01 \x01(\x0e2\x1e.arupa.service.v2.ProxyNetworkR\anetwork\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x16\n" +
+	"\x06scheme\x18\x03 \x01(\tR\x06scheme\"\xd1\x01\n" +
+	"\tTransport\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x123\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x1f.arupa.service.v2.TransportTypeR\x04type\x12;\n" +
+	"\x06static\x18\x03 \x01(\v2!.arupa.service.v2.StaticTransportH\x00R\x06static\x128\n" +
+	"\x05proxy\x18\x04 \x01(\v2 .arupa.service.v2.ProxyTransportH\x00R\x05proxyB\b\n" +
+	"\x06config\"u\n" +
+	"\tHTTPRoute\x12\x16\n" +
+	"\x06method\x18\x01 \x01(\tR\x06method\x12\x18\n" +
+	"\apattern\x18\x02 \x01(\tR\apattern\x126\n" +
+	"\x06access\x18\x03 \x01(\v2\x1e.arupa.service.v2.AccessPolicyR\x06access\"\xb2\x02\n" +
+	"\rSocketIORoute\x12\x1c\n" +
+	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x16\n" +
+	"\x06events\x18\x02 \x03(\tR\x06events\x126\n" +
+	"\x06access\x18\x03 \x01(\v2\x1e.arupa.service.v2.AccessPolicyR\x06access\x12S\n" +
+	"\fevent_access\x18\x04 \x03(\v20.arupa.service.v2.SocketIORoute.EventAccessEntryR\veventAccess\x1a^\n" +
+	"\x10EventAccessEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x124\n" +
+	"\x05value\x18\x02 \x01(\v2\x1e.arupa.service.v2.AccessPolicyR\x05value:\x028\x01\"\xb6\x01\n" +
+	"\x05Route\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
+	"\ftransport_id\x18\x02 \x01(\tR\vtransportId\x121\n" +
+	"\x04http\x18\x03 \x01(\v2\x1b.arupa.service.v2.HTTPRouteH\x00R\x04http\x12>\n" +
+	"\tsocket_io\x18\x04 \x01(\v2\x1f.arupa.service.v2.SocketIORouteH\x00R\bsocketIoB\a\n" +
+	"\x05route\"U\n" +
+	"\x18RegisterTransportRequest\x129\n" +
+	"\ttransport\x18\x01 \x01(\v2\x1b.arupa.service.v2.TransportR\ttransport\",\n" +
+	"\x1aUnregisterTransportRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"H\n" +
+	"\x15RegisterRoutesRequest\x12/\n" +
+	"\x06routes\x18\x01 \x03(\v2\x17.arupa.service.v2.RouteR\x06routes\"+\n" +
+	"\x17UnregisterRoutesRequest\x12\x10\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\";\n" +
+	"\x13RegistrationFailure\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xa8\x01\n" +
+	"\x11RegistrationReply\x12\x1e\n" +
+	"\n" +
+	"registered\x18\x01 \x03(\tR\n" +
+	"registered\x12A\n" +
+	"\bfailures\x18\x02 \x03(\v2%.arupa.service.v2.RegistrationFailureR\bfailures\x12\x1a\n" +
+	"\bdegraded\x18\x03 \x01(\bR\bdegraded\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\">\n" +
 	"\fKVGetRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\"8\n" +
@@ -1747,27 +2523,27 @@ const file_proto_arupa_proto_rawDesc = "" +
 	"\x04keys\x18\x01 \x03(\tR\x04keys\"!\n" +
 	"\tEmitReply\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\"\x12\n" +
-	"\x10ParamsGetRequest\"\xa6\x01\n" +
-	"\x0eParamsGetReply\x12C\n" +
-	"\x06params\x18\x01 \x03(\v2+.arupa.plugin.v1.ParamsGetReply.ParamsEntryR\x06params\x12\x14\n" +
+	"\x10ParamsGetRequest\"\xa7\x01\n" +
+	"\x0eParamsGetReply\x12D\n" +
+	"\x06params\x18\x01 \x03(\v2,.arupa.service.v2.ParamsGetReply.ParamsEntryR\x06params\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1a9\n" +
 	"\vParamsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa4\x01\n" +
-	"\x12ParamsPatchRequest\x12>\n" +
-	"\x03set\x18\x01 \x03(\v2,.arupa.plugin.v1.ParamsPatchRequest.SetEntryR\x03set\x12\x16\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +
+	"\x12ParamsPatchRequest\x12?\n" +
+	"\x03set\x18\x01 \x03(\v2-.arupa.service.v2.ParamsPatchRequest.SetEntryR\x03set\x12\x16\n" +
 	"\x06delete\x18\x02 \x03(\tR\x06delete\x1a6\n" +
 	"\bSetEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"(\n" +
 	"\x10ParamsPatchReply\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"o\n" +
-	"\rPluginMessage\x12\x16\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"p\n" +
+	"\x0eServiceMessage\x12\x16\n" +
 	"\x06source\x18\x01 \x01(\tR\x06source\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x14\n" +
 	"\x05topic\x18\x03 \x01(\tR\x05topic\x12\x18\n" +
-	"\apayload\x18\x04 \x01(\fR\apayload\"D\n" +
-	"\x12PluginMessageReply\x12\x14\n" +
+	"\apayload\x18\x04 \x01(\fR\apayload\"E\n" +
+	"\x13ServiceMessageReply\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"<\n" +
 	"\n" +
@@ -1775,23 +2551,38 @@ const file_proto_arupa_proto_rawDesc = "" +
 	"\x05level\x18\x01 \x01(\tR\x05level\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\n" +
 	"\n" +
-	"\bLogReply2\xd3\x02\n" +
-	"\x06Plugin\x12L\n" +
-	"\bRegister\x12 .arupa.plugin.v1.RegisterRequest\x1a\x1e.arupa.plugin.v1.RegisterReply\x12I\n" +
+	"\bLogReply*\x9b\x01\n" +
+	"\rTransportType\x12\x1e\n" +
+	"\x1aTRANSPORT_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15TRANSPORT_TYPE_STATIC\x10\x01\x12\x17\n" +
+	"\x13TRANSPORT_TYPE_HTTP\x10\x02\x12\x1c\n" +
+	"\x18TRANSPORT_TYPE_SOCKET_IO\x10\x03\x12\x18\n" +
+	"\x14TRANSPORT_TYPE_PROXY\x10\x04*y\n" +
+	"\fProxyNetwork\x12\x1d\n" +
+	"\x19PROXY_NETWORK_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17PROXY_NETWORK_INHERITED\x10\x01\x12\x16\n" +
+	"\x12PROXY_NETWORK_UNIX\x10\x02\x12\x15\n" +
+	"\x11PROXY_NETWORK_TCP\x10\x032\xdf\x02\n" +
+	"\aService\x12N\n" +
+	"\bRegister\x12!.arupa.service.v2.RegisterRequest\x1a\x1f.arupa.service.v2.RegisterReply\x12K\n" +
 	"\n" +
-	"HandleHTTP\x12\x1c.arupa.plugin.v1.HTTPRequest\x1a\x1d.arupa.plugin.v1.HTTPResponse\x12T\n" +
-	"\x11HandleSocketEvent\x12\x1c.arupa.plugin.v1.SocketEvent\x1a!.arupa.plugin.v1.SocketEventReply\x12Z\n" +
-	"\x13HandlePluginMessage\x12\x1e.arupa.plugin.v1.PluginMessage\x1a#.arupa.plugin.v1.PluginMessageReply2\xad\x05\n" +
-	"\x04Host\x12C\n" +
-	"\x05KVGet\x12\x1d.arupa.plugin.v1.KVGetRequest\x1a\x1b.arupa.plugin.v1.KVGetReply\x12C\n" +
-	"\x05KVSet\x12\x1d.arupa.plugin.v1.KVSetRequest\x1a\x1b.arupa.plugin.v1.KVSetReply\x12L\n" +
-	"\bKVDelete\x12 .arupa.plugin.v1.KVDeleteRequest\x1a\x1e.arupa.plugin.v1.KVDeleteReply\x12F\n" +
-	"\x06KVList\x12\x1e.arupa.plugin.v1.KVListRequest\x1a\x1c.arupa.plugin.v1.KVListReply\x12O\n" +
-	"\tGetParams\x12!.arupa.plugin.v1.ParamsGetRequest\x1a\x1f.arupa.plugin.v1.ParamsGetReply\x12U\n" +
-	"\vPatchParams\x12#.arupa.plugin.v1.ParamsPatchRequest\x1a!.arupa.plugin.v1.ParamsPatchReply\x12D\n" +
-	"\x04Emit\x12 .arupa.plugin.v1.EmitInstruction\x1a\x1a.arupa.plugin.v1.EmitReply\x12X\n" +
-	"\x11SendPluginMessage\x12\x1e.arupa.plugin.v1.PluginMessage\x1a#.arupa.plugin.v1.PluginMessageReply\x12=\n" +
-	"\x03Log\x12\x1b.arupa.plugin.v1.LogRequest\x1a\x19.arupa.plugin.v1.LogReplyB:Z8github.com/SteelDrEgg/arupa-sdk/golang/gen/grpc;pluginv1b\x06proto3"
+	"HandleHTTP\x12\x1d.arupa.service.v2.HTTPRequest\x1a\x1e.arupa.service.v2.HTTPResponse\x12V\n" +
+	"\x11HandleSocketEvent\x12\x1d.arupa.service.v2.SocketEvent\x1a\".arupa.service.v2.SocketEventReply\x12_\n" +
+	"\x14HandleServiceMessage\x12 .arupa.service.v2.ServiceMessage\x1a%.arupa.service.v2.ServiceMessageReply2\xd6\b\n" +
+	"\x04Host\x12E\n" +
+	"\x05KVGet\x12\x1e.arupa.service.v2.KVGetRequest\x1a\x1c.arupa.service.v2.KVGetReply\x12E\n" +
+	"\x05KVSet\x12\x1e.arupa.service.v2.KVSetRequest\x1a\x1c.arupa.service.v2.KVSetReply\x12N\n" +
+	"\bKVDelete\x12!.arupa.service.v2.KVDeleteRequest\x1a\x1f.arupa.service.v2.KVDeleteReply\x12H\n" +
+	"\x06KVList\x12\x1f.arupa.service.v2.KVListRequest\x1a\x1d.arupa.service.v2.KVListReply\x12Q\n" +
+	"\tGetParams\x12\".arupa.service.v2.ParamsGetRequest\x1a .arupa.service.v2.ParamsGetReply\x12W\n" +
+	"\vPatchParams\x12$.arupa.service.v2.ParamsPatchRequest\x1a\".arupa.service.v2.ParamsPatchReply\x12F\n" +
+	"\x04Emit\x12!.arupa.service.v2.EmitInstruction\x1a\x1b.arupa.service.v2.EmitReply\x12]\n" +
+	"\x12SendServiceMessage\x12 .arupa.service.v2.ServiceMessage\x1a%.arupa.service.v2.ServiceMessageReply\x12d\n" +
+	"\x11RegisterTransport\x12*.arupa.service.v2.RegisterTransportRequest\x1a#.arupa.service.v2.RegistrationReply\x12h\n" +
+	"\x13UnregisterTransport\x12,.arupa.service.v2.UnregisterTransportRequest\x1a#.arupa.service.v2.RegistrationReply\x12^\n" +
+	"\x0eRegisterRoutes\x12'.arupa.service.v2.RegisterRoutesRequest\x1a#.arupa.service.v2.RegistrationReply\x12b\n" +
+	"\x10UnregisterRoutes\x12).arupa.service.v2.UnregisterRoutesRequest\x1a#.arupa.service.v2.RegistrationReply\x12?\n" +
+	"\x03Log\x12\x1c.arupa.service.v2.LogRequest\x1a\x1a.arupa.service.v2.LogReplyB;Z9github.com/SteelDrEgg/arupa-sdk/golang/gen/grpc;servicev2b\x06proto3"
 
 var (
 	file_proto_arupa_proto_rawDescOnce sync.Once
@@ -1805,92 +2596,118 @@ func file_proto_arupa_proto_rawDescGZIP() []byte {
 	return file_proto_arupa_proto_rawDescData
 }
 
-var file_proto_arupa_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_proto_arupa_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_proto_arupa_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
 var file_proto_arupa_proto_goTypes = []any{
-	(*User)(nil),               // 0: arupa.plugin.v1.User
-	(*AccessPolicy)(nil),       // 1: arupa.plugin.v1.AccessPolicy
-	(*HTTPRoute)(nil),          // 2: arupa.plugin.v1.HTTPRoute
-	(*HTTPRequest)(nil),        // 3: arupa.plugin.v1.HTTPRequest
-	(*HTTPResponse)(nil),       // 4: arupa.plugin.v1.HTTPResponse
-	(*StaticMount)(nil),        // 5: arupa.plugin.v1.StaticMount
-	(*SocketNamespace)(nil),    // 6: arupa.plugin.v1.SocketNamespace
-	(*SocketEvent)(nil),        // 7: arupa.plugin.v1.SocketEvent
-	(*EmitInstruction)(nil),    // 8: arupa.plugin.v1.EmitInstruction
-	(*SocketEventReply)(nil),   // 9: arupa.plugin.v1.SocketEventReply
-	(*RegisterRequest)(nil),    // 10: arupa.plugin.v1.RegisterRequest
-	(*RegisterReply)(nil),      // 11: arupa.plugin.v1.RegisterReply
-	(*KVGetRequest)(nil),       // 12: arupa.plugin.v1.KVGetRequest
-	(*KVGetReply)(nil),         // 13: arupa.plugin.v1.KVGetReply
-	(*KVSetRequest)(nil),       // 14: arupa.plugin.v1.KVSetRequest
-	(*KVSetReply)(nil),         // 15: arupa.plugin.v1.KVSetReply
-	(*KVDeleteRequest)(nil),    // 16: arupa.plugin.v1.KVDeleteRequest
-	(*KVDeleteReply)(nil),      // 17: arupa.plugin.v1.KVDeleteReply
-	(*KVListRequest)(nil),      // 18: arupa.plugin.v1.KVListRequest
-	(*KVListReply)(nil),        // 19: arupa.plugin.v1.KVListReply
-	(*EmitReply)(nil),          // 20: arupa.plugin.v1.EmitReply
-	(*ParamsGetRequest)(nil),   // 21: arupa.plugin.v1.ParamsGetRequest
-	(*ParamsGetReply)(nil),     // 22: arupa.plugin.v1.ParamsGetReply
-	(*ParamsPatchRequest)(nil), // 23: arupa.plugin.v1.ParamsPatchRequest
-	(*ParamsPatchReply)(nil),   // 24: arupa.plugin.v1.ParamsPatchReply
-	(*PluginMessage)(nil),      // 25: arupa.plugin.v1.PluginMessage
-	(*PluginMessageReply)(nil), // 26: arupa.plugin.v1.PluginMessageReply
-	(*LogRequest)(nil),         // 27: arupa.plugin.v1.LogRequest
-	(*LogReply)(nil),           // 28: arupa.plugin.v1.LogReply
-	nil,                        // 29: arupa.plugin.v1.HTTPRequest.HeadersEntry
-	nil,                        // 30: arupa.plugin.v1.HTTPResponse.HeadersEntry
-	nil,                        // 31: arupa.plugin.v1.SocketNamespace.EventAccessEntry
-	nil,                        // 32: arupa.plugin.v1.RegisterRequest.ParamsEntry
-	nil,                        // 33: arupa.plugin.v1.ParamsGetReply.ParamsEntry
-	nil,                        // 34: arupa.plugin.v1.ParamsPatchRequest.SetEntry
+	(TransportType)(0),                 // 0: arupa.service.v2.TransportType
+	(ProxyNetwork)(0),                  // 1: arupa.service.v2.ProxyNetwork
+	(*User)(nil),                       // 2: arupa.service.v2.User
+	(*AccessPolicy)(nil),               // 3: arupa.service.v2.AccessPolicy
+	(*Header)(nil),                     // 4: arupa.service.v2.Header
+	(*HTTPRequest)(nil),                // 5: arupa.service.v2.HTTPRequest
+	(*HTTPResponse)(nil),               // 6: arupa.service.v2.HTTPResponse
+	(*SocketEvent)(nil),                // 7: arupa.service.v2.SocketEvent
+	(*EmitInstruction)(nil),            // 8: arupa.service.v2.EmitInstruction
+	(*SocketEventReply)(nil),           // 9: arupa.service.v2.SocketEventReply
+	(*InheritedListener)(nil),          // 10: arupa.service.v2.InheritedListener
+	(*RegisterRequest)(nil),            // 11: arupa.service.v2.RegisterRequest
+	(*RegisterReply)(nil),              // 12: arupa.service.v2.RegisterReply
+	(*StaticTransport)(nil),            // 13: arupa.service.v2.StaticTransport
+	(*ProxyTransport)(nil),             // 14: arupa.service.v2.ProxyTransport
+	(*Transport)(nil),                  // 15: arupa.service.v2.Transport
+	(*HTTPRoute)(nil),                  // 16: arupa.service.v2.HTTPRoute
+	(*SocketIORoute)(nil),              // 17: arupa.service.v2.SocketIORoute
+	(*Route)(nil),                      // 18: arupa.service.v2.Route
+	(*RegisterTransportRequest)(nil),   // 19: arupa.service.v2.RegisterTransportRequest
+	(*UnregisterTransportRequest)(nil), // 20: arupa.service.v2.UnregisterTransportRequest
+	(*RegisterRoutesRequest)(nil),      // 21: arupa.service.v2.RegisterRoutesRequest
+	(*UnregisterRoutesRequest)(nil),    // 22: arupa.service.v2.UnregisterRoutesRequest
+	(*RegistrationFailure)(nil),        // 23: arupa.service.v2.RegistrationFailure
+	(*RegistrationReply)(nil),          // 24: arupa.service.v2.RegistrationReply
+	(*KVGetRequest)(nil),               // 25: arupa.service.v2.KVGetRequest
+	(*KVGetReply)(nil),                 // 26: arupa.service.v2.KVGetReply
+	(*KVSetRequest)(nil),               // 27: arupa.service.v2.KVSetRequest
+	(*KVSetReply)(nil),                 // 28: arupa.service.v2.KVSetReply
+	(*KVDeleteRequest)(nil),            // 29: arupa.service.v2.KVDeleteRequest
+	(*KVDeleteReply)(nil),              // 30: arupa.service.v2.KVDeleteReply
+	(*KVListRequest)(nil),              // 31: arupa.service.v2.KVListRequest
+	(*KVListReply)(nil),                // 32: arupa.service.v2.KVListReply
+	(*EmitReply)(nil),                  // 33: arupa.service.v2.EmitReply
+	(*ParamsGetRequest)(nil),           // 34: arupa.service.v2.ParamsGetRequest
+	(*ParamsGetReply)(nil),             // 35: arupa.service.v2.ParamsGetReply
+	(*ParamsPatchRequest)(nil),         // 36: arupa.service.v2.ParamsPatchRequest
+	(*ParamsPatchReply)(nil),           // 37: arupa.service.v2.ParamsPatchReply
+	(*ServiceMessage)(nil),             // 38: arupa.service.v2.ServiceMessage
+	(*ServiceMessageReply)(nil),        // 39: arupa.service.v2.ServiceMessageReply
+	(*LogRequest)(nil),                 // 40: arupa.service.v2.LogRequest
+	(*LogReply)(nil),                   // 41: arupa.service.v2.LogReply
+	nil,                                // 42: arupa.service.v2.RegisterRequest.ParamsEntry
+	nil,                                // 43: arupa.service.v2.SocketIORoute.EventAccessEntry
+	nil,                                // 44: arupa.service.v2.ParamsGetReply.ParamsEntry
+	nil,                                // 45: arupa.service.v2.ParamsPatchRequest.SetEntry
 }
 var file_proto_arupa_proto_depIdxs = []int32{
-	1,  // 0: arupa.plugin.v1.HTTPRoute.access:type_name -> arupa.plugin.v1.AccessPolicy
-	29, // 1: arupa.plugin.v1.HTTPRequest.headers:type_name -> arupa.plugin.v1.HTTPRequest.HeadersEntry
-	0,  // 2: arupa.plugin.v1.HTTPRequest.user:type_name -> arupa.plugin.v1.User
-	30, // 3: arupa.plugin.v1.HTTPResponse.headers:type_name -> arupa.plugin.v1.HTTPResponse.HeadersEntry
-	1,  // 4: arupa.plugin.v1.StaticMount.access:type_name -> arupa.plugin.v1.AccessPolicy
-	1,  // 5: arupa.plugin.v1.SocketNamespace.access:type_name -> arupa.plugin.v1.AccessPolicy
-	31, // 6: arupa.plugin.v1.SocketNamespace.event_access:type_name -> arupa.plugin.v1.SocketNamespace.EventAccessEntry
-	0,  // 7: arupa.plugin.v1.SocketEvent.user:type_name -> arupa.plugin.v1.User
-	8,  // 8: arupa.plugin.v1.SocketEventReply.emits:type_name -> arupa.plugin.v1.EmitInstruction
-	32, // 9: arupa.plugin.v1.RegisterRequest.params:type_name -> arupa.plugin.v1.RegisterRequest.ParamsEntry
-	2,  // 10: arupa.plugin.v1.RegisterReply.http_routes:type_name -> arupa.plugin.v1.HTTPRoute
-	6,  // 11: arupa.plugin.v1.RegisterReply.socket_namespaces:type_name -> arupa.plugin.v1.SocketNamespace
-	5,  // 12: arupa.plugin.v1.RegisterReply.static_mounts:type_name -> arupa.plugin.v1.StaticMount
-	33, // 13: arupa.plugin.v1.ParamsGetReply.params:type_name -> arupa.plugin.v1.ParamsGetReply.ParamsEntry
-	34, // 14: arupa.plugin.v1.ParamsPatchRequest.set:type_name -> arupa.plugin.v1.ParamsPatchRequest.SetEntry
-	1,  // 15: arupa.plugin.v1.SocketNamespace.EventAccessEntry.value:type_name -> arupa.plugin.v1.AccessPolicy
-	10, // 16: arupa.plugin.v1.Plugin.Register:input_type -> arupa.plugin.v1.RegisterRequest
-	3,  // 17: arupa.plugin.v1.Plugin.HandleHTTP:input_type -> arupa.plugin.v1.HTTPRequest
-	7,  // 18: arupa.plugin.v1.Plugin.HandleSocketEvent:input_type -> arupa.plugin.v1.SocketEvent
-	25, // 19: arupa.plugin.v1.Plugin.HandlePluginMessage:input_type -> arupa.plugin.v1.PluginMessage
-	12, // 20: arupa.plugin.v1.Host.KVGet:input_type -> arupa.plugin.v1.KVGetRequest
-	14, // 21: arupa.plugin.v1.Host.KVSet:input_type -> arupa.plugin.v1.KVSetRequest
-	16, // 22: arupa.plugin.v1.Host.KVDelete:input_type -> arupa.plugin.v1.KVDeleteRequest
-	18, // 23: arupa.plugin.v1.Host.KVList:input_type -> arupa.plugin.v1.KVListRequest
-	21, // 24: arupa.plugin.v1.Host.GetParams:input_type -> arupa.plugin.v1.ParamsGetRequest
-	23, // 25: arupa.plugin.v1.Host.PatchParams:input_type -> arupa.plugin.v1.ParamsPatchRequest
-	8,  // 26: arupa.plugin.v1.Host.Emit:input_type -> arupa.plugin.v1.EmitInstruction
-	25, // 27: arupa.plugin.v1.Host.SendPluginMessage:input_type -> arupa.plugin.v1.PluginMessage
-	27, // 28: arupa.plugin.v1.Host.Log:input_type -> arupa.plugin.v1.LogRequest
-	11, // 29: arupa.plugin.v1.Plugin.Register:output_type -> arupa.plugin.v1.RegisterReply
-	4,  // 30: arupa.plugin.v1.Plugin.HandleHTTP:output_type -> arupa.plugin.v1.HTTPResponse
-	9,  // 31: arupa.plugin.v1.Plugin.HandleSocketEvent:output_type -> arupa.plugin.v1.SocketEventReply
-	26, // 32: arupa.plugin.v1.Plugin.HandlePluginMessage:output_type -> arupa.plugin.v1.PluginMessageReply
-	13, // 33: arupa.plugin.v1.Host.KVGet:output_type -> arupa.plugin.v1.KVGetReply
-	15, // 34: arupa.plugin.v1.Host.KVSet:output_type -> arupa.plugin.v1.KVSetReply
-	17, // 35: arupa.plugin.v1.Host.KVDelete:output_type -> arupa.plugin.v1.KVDeleteReply
-	19, // 36: arupa.plugin.v1.Host.KVList:output_type -> arupa.plugin.v1.KVListReply
-	22, // 37: arupa.plugin.v1.Host.GetParams:output_type -> arupa.plugin.v1.ParamsGetReply
-	24, // 38: arupa.plugin.v1.Host.PatchParams:output_type -> arupa.plugin.v1.ParamsPatchReply
-	20, // 39: arupa.plugin.v1.Host.Emit:output_type -> arupa.plugin.v1.EmitReply
-	26, // 40: arupa.plugin.v1.Host.SendPluginMessage:output_type -> arupa.plugin.v1.PluginMessageReply
-	28, // 41: arupa.plugin.v1.Host.Log:output_type -> arupa.plugin.v1.LogReply
-	29, // [29:42] is the sub-list for method output_type
-	16, // [16:29] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	4,  // 0: arupa.service.v2.HTTPRequest.headers:type_name -> arupa.service.v2.Header
+	2,  // 1: arupa.service.v2.HTTPRequest.user:type_name -> arupa.service.v2.User
+	4,  // 2: arupa.service.v2.HTTPResponse.headers:type_name -> arupa.service.v2.Header
+	2,  // 3: arupa.service.v2.SocketEvent.user:type_name -> arupa.service.v2.User
+	8,  // 4: arupa.service.v2.SocketEventReply.emits:type_name -> arupa.service.v2.EmitInstruction
+	42, // 5: arupa.service.v2.RegisterRequest.params:type_name -> arupa.service.v2.RegisterRequest.ParamsEntry
+	10, // 6: arupa.service.v2.RegisterRequest.listeners:type_name -> arupa.service.v2.InheritedListener
+	1,  // 7: arupa.service.v2.ProxyTransport.network:type_name -> arupa.service.v2.ProxyNetwork
+	0,  // 8: arupa.service.v2.Transport.type:type_name -> arupa.service.v2.TransportType
+	13, // 9: arupa.service.v2.Transport.static:type_name -> arupa.service.v2.StaticTransport
+	14, // 10: arupa.service.v2.Transport.proxy:type_name -> arupa.service.v2.ProxyTransport
+	3,  // 11: arupa.service.v2.HTTPRoute.access:type_name -> arupa.service.v2.AccessPolicy
+	3,  // 12: arupa.service.v2.SocketIORoute.access:type_name -> arupa.service.v2.AccessPolicy
+	43, // 13: arupa.service.v2.SocketIORoute.event_access:type_name -> arupa.service.v2.SocketIORoute.EventAccessEntry
+	16, // 14: arupa.service.v2.Route.http:type_name -> arupa.service.v2.HTTPRoute
+	17, // 15: arupa.service.v2.Route.socket_io:type_name -> arupa.service.v2.SocketIORoute
+	15, // 16: arupa.service.v2.RegisterTransportRequest.transport:type_name -> arupa.service.v2.Transport
+	18, // 17: arupa.service.v2.RegisterRoutesRequest.routes:type_name -> arupa.service.v2.Route
+	23, // 18: arupa.service.v2.RegistrationReply.failures:type_name -> arupa.service.v2.RegistrationFailure
+	44, // 19: arupa.service.v2.ParamsGetReply.params:type_name -> arupa.service.v2.ParamsGetReply.ParamsEntry
+	45, // 20: arupa.service.v2.ParamsPatchRequest.set:type_name -> arupa.service.v2.ParamsPatchRequest.SetEntry
+	3,  // 21: arupa.service.v2.SocketIORoute.EventAccessEntry.value:type_name -> arupa.service.v2.AccessPolicy
+	11, // 22: arupa.service.v2.Service.Register:input_type -> arupa.service.v2.RegisterRequest
+	5,  // 23: arupa.service.v2.Service.HandleHTTP:input_type -> arupa.service.v2.HTTPRequest
+	7,  // 24: arupa.service.v2.Service.HandleSocketEvent:input_type -> arupa.service.v2.SocketEvent
+	38, // 25: arupa.service.v2.Service.HandleServiceMessage:input_type -> arupa.service.v2.ServiceMessage
+	25, // 26: arupa.service.v2.Host.KVGet:input_type -> arupa.service.v2.KVGetRequest
+	27, // 27: arupa.service.v2.Host.KVSet:input_type -> arupa.service.v2.KVSetRequest
+	29, // 28: arupa.service.v2.Host.KVDelete:input_type -> arupa.service.v2.KVDeleteRequest
+	31, // 29: arupa.service.v2.Host.KVList:input_type -> arupa.service.v2.KVListRequest
+	34, // 30: arupa.service.v2.Host.GetParams:input_type -> arupa.service.v2.ParamsGetRequest
+	36, // 31: arupa.service.v2.Host.PatchParams:input_type -> arupa.service.v2.ParamsPatchRequest
+	8,  // 32: arupa.service.v2.Host.Emit:input_type -> arupa.service.v2.EmitInstruction
+	38, // 33: arupa.service.v2.Host.SendServiceMessage:input_type -> arupa.service.v2.ServiceMessage
+	19, // 34: arupa.service.v2.Host.RegisterTransport:input_type -> arupa.service.v2.RegisterTransportRequest
+	20, // 35: arupa.service.v2.Host.UnregisterTransport:input_type -> arupa.service.v2.UnregisterTransportRequest
+	21, // 36: arupa.service.v2.Host.RegisterRoutes:input_type -> arupa.service.v2.RegisterRoutesRequest
+	22, // 37: arupa.service.v2.Host.UnregisterRoutes:input_type -> arupa.service.v2.UnregisterRoutesRequest
+	40, // 38: arupa.service.v2.Host.Log:input_type -> arupa.service.v2.LogRequest
+	12, // 39: arupa.service.v2.Service.Register:output_type -> arupa.service.v2.RegisterReply
+	6,  // 40: arupa.service.v2.Service.HandleHTTP:output_type -> arupa.service.v2.HTTPResponse
+	9,  // 41: arupa.service.v2.Service.HandleSocketEvent:output_type -> arupa.service.v2.SocketEventReply
+	39, // 42: arupa.service.v2.Service.HandleServiceMessage:output_type -> arupa.service.v2.ServiceMessageReply
+	26, // 43: arupa.service.v2.Host.KVGet:output_type -> arupa.service.v2.KVGetReply
+	28, // 44: arupa.service.v2.Host.KVSet:output_type -> arupa.service.v2.KVSetReply
+	30, // 45: arupa.service.v2.Host.KVDelete:output_type -> arupa.service.v2.KVDeleteReply
+	32, // 46: arupa.service.v2.Host.KVList:output_type -> arupa.service.v2.KVListReply
+	35, // 47: arupa.service.v2.Host.GetParams:output_type -> arupa.service.v2.ParamsGetReply
+	37, // 48: arupa.service.v2.Host.PatchParams:output_type -> arupa.service.v2.ParamsPatchReply
+	33, // 49: arupa.service.v2.Host.Emit:output_type -> arupa.service.v2.EmitReply
+	39, // 50: arupa.service.v2.Host.SendServiceMessage:output_type -> arupa.service.v2.ServiceMessageReply
+	24, // 51: arupa.service.v2.Host.RegisterTransport:output_type -> arupa.service.v2.RegistrationReply
+	24, // 52: arupa.service.v2.Host.UnregisterTransport:output_type -> arupa.service.v2.RegistrationReply
+	24, // 53: arupa.service.v2.Host.RegisterRoutes:output_type -> arupa.service.v2.RegistrationReply
+	24, // 54: arupa.service.v2.Host.UnregisterRoutes:output_type -> arupa.service.v2.RegistrationReply
+	41, // 55: arupa.service.v2.Host.Log:output_type -> arupa.service.v2.LogReply
+	39, // [39:56] is the sub-list for method output_type
+	22, // [22:39] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_proto_arupa_proto_init() }
@@ -1898,18 +2715,27 @@ func file_proto_arupa_proto_init() {
 	if File_proto_arupa_proto != nil {
 		return
 	}
+	file_proto_arupa_proto_msgTypes[13].OneofWrappers = []any{
+		(*Transport_Static)(nil),
+		(*Transport_Proxy)(nil),
+	}
+	file_proto_arupa_proto_msgTypes[16].OneofWrappers = []any{
+		(*Route_Http)(nil),
+		(*Route_SocketIo)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_arupa_proto_rawDesc), len(file_proto_arupa_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   35,
+			NumEnums:      2,
+			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
 		GoTypes:           file_proto_arupa_proto_goTypes,
 		DependencyIndexes: file_proto_arupa_proto_depIdxs,
+		EnumInfos:         file_proto_arupa_proto_enumTypes,
 		MessageInfos:      file_proto_arupa_proto_msgTypes,
 	}.Build()
 	File_proto_arupa_proto = out.File

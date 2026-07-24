@@ -6,7 +6,7 @@
 // 	protoc               v7.35.0
 // source: proto/arupa.proto
 
-package pluginv1
+package servicev2
 
 import (
 	context "context"

@@ -19,6 +19,12 @@ func (b HTTPBinding[Request, Response]) ServeHTTP(ctx context.Context, request *
 	if request == nil {
 		return nil, fmt.Errorf("arupa: protocol http request is nil")
 	}
+	if b.Request == nil {
+		return nil, fmt.Errorf("arupa: protocol http request converter is nil")
+	}
+	if b.Response == nil {
+		return nil, fmt.Errorf("arupa: protocol http response converter is nil")
+	}
 	response, err := ServeHTTP(ctx, b.Request(request), handler)
 	if err != nil {
 		return nil, err
@@ -26,34 +32,18 @@ func (b HTTPBinding[Request, Response]) ServeHTTP(ctx context.Context, request *
 	return b.Response(response), nil
 }
 
-// RegistrationBinding supplies the protocol-specific message constructors for
-// a Registration. The declaration validation and list conversion are shared by
-// every protocol binding.
-type RegistrationBinding[Route any, Namespace any, Mount any, Reply any] struct {
-	Route     func(HTTPRoute) *Route
-	Namespace func(SocketNamespace) *Namespace
-	Mount     func(StaticMount) *Mount
-	Reply     func(name, version string, routes []*Route, namespaces []*Namespace, mounts []*Mount) *Reply
+// ServiceInfoBinding supplies the protocol-specific Register reply constructor.
+type ServiceInfoBinding[Reply any] struct {
+	Reply func(ServiceInfo) *Reply
 }
 
-// RegistrationReply converts a Registration into a protocol reply.
-func (b RegistrationBinding[Route, Namespace, Mount, Reply]) RegistrationReply(registration Registration) (*Reply, error) {
-	if err := registration.Validate(); err != nil {
+// RegisterReply validates and converts a service identity.
+func (b ServiceInfoBinding[Reply]) RegisterReply(info ServiceInfo) (*Reply, error) {
+	if err := info.Validate(); err != nil {
 		return nil, err
 	}
-
-	routes := make([]*Route, 0, len(registration.HTTPRoutes))
-	for _, route := range registration.HTTPRoutes {
-		routes = append(routes, b.Route(route))
+	if b.Reply == nil {
+		return nil, fmt.Errorf("arupa: protocol register reply converter is nil")
 	}
-	namespaces := make([]*Namespace, 0, len(registration.SocketNamespaces))
-	for _, namespace := range registration.SocketNamespaces {
-		namespaces = append(namespaces, b.Namespace(namespace))
-	}
-	mounts := make([]*Mount, 0, len(registration.StaticMounts))
-	for _, mount := range registration.StaticMounts {
-		mounts = append(mounts, b.Mount(mount))
-	}
-
-	return b.Reply(registration.Name, registration.Version, routes, namespaces, mounts), nil
+	return b.Reply(info), nil
 }

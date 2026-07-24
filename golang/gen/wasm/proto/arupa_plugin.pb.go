@@ -6,7 +6,7 @@
 // 	protoc               v7.35.0
 // source: proto/arupa.proto
 
-package pluginv1
+package servicev2
 
 import (
 	context "context"
@@ -14,27 +14,27 @@ import (
 	_ "unsafe"
 )
 
-const PluginPluginAPIVersion = 1
+const ServicePluginAPIVersion = 2
 
-//go:wasmexport plugin_api_version
-func _plugin_api_version() uint64 {
-	return PluginPluginAPIVersion
+//go:wasmexport service_api_version
+func _service_api_version() uint64 {
+	return ServicePluginAPIVersion
 }
 
-var plugin Plugin
+var service Service
 
-func RegisterPlugin(p Plugin) {
-	plugin = p
+func RegisterService(p Service) {
+	service = p
 }
 
-//go:wasmexport plugin_register
-func _plugin_register(ptr, size uint32) uint64 {
+//go:wasmexport service_register
+func _service_register(ptr, size uint32) uint64 {
 	b := wasm.PtrToByte(ptr, size)
 	req := new(RegisterRequest)
 	if err := req.UnmarshalVT(b); err != nil {
 		return 0
 	}
-	response, err := plugin.Register(context.Background(), req)
+	response, err := service.Register(context.Background(), req)
 	if err != nil {
 		ptr, size = wasm.ByteToPtr([]byte(err.Error()))
 		return (uint64(ptr) << uint64(32)) | uint64(size) |
@@ -51,14 +51,14 @@ func _plugin_register(ptr, size uint32) uint64 {
 	return (uint64(ptr) << uint64(32)) | uint64(size)
 }
 
-//go:wasmexport plugin_handle_http
-func _plugin_handle_http(ptr, size uint32) uint64 {
+//go:wasmexport service_handle_http
+func _service_handle_http(ptr, size uint32) uint64 {
 	b := wasm.PtrToByte(ptr, size)
 	req := new(HTTPRequest)
 	if err := req.UnmarshalVT(b); err != nil {
 		return 0
 	}
-	response, err := plugin.HandleHTTP(context.Background(), req)
+	response, err := service.HandleHTTP(context.Background(), req)
 	if err != nil {
 		ptr, size = wasm.ByteToPtr([]byte(err.Error()))
 		return (uint64(ptr) << uint64(32)) | uint64(size) |
@@ -75,14 +75,14 @@ func _plugin_handle_http(ptr, size uint32) uint64 {
 	return (uint64(ptr) << uint64(32)) | uint64(size)
 }
 
-//go:wasmexport plugin_handle_socket_event
-func _plugin_handle_socket_event(ptr, size uint32) uint64 {
+//go:wasmexport service_handle_socket_event
+func _service_handle_socket_event(ptr, size uint32) uint64 {
 	b := wasm.PtrToByte(ptr, size)
 	req := new(SocketEvent)
 	if err := req.UnmarshalVT(b); err != nil {
 		return 0
 	}
-	response, err := plugin.HandleSocketEvent(context.Background(), req)
+	response, err := service.HandleSocketEvent(context.Background(), req)
 	if err != nil {
 		ptr, size = wasm.ByteToPtr([]byte(err.Error()))
 		return (uint64(ptr) << uint64(32)) | uint64(size) |
@@ -99,14 +99,14 @@ func _plugin_handle_socket_event(ptr, size uint32) uint64 {
 	return (uint64(ptr) << uint64(32)) | uint64(size)
 }
 
-//go:wasmexport plugin_handle_plugin_message
-func _plugin_handle_plugin_message(ptr, size uint32) uint64 {
+//go:wasmexport service_handle_service_message
+func _service_handle_service_message(ptr, size uint32) uint64 {
 	b := wasm.PtrToByte(ptr, size)
-	req := new(PluginMessage)
+	req := new(ServiceMessage)
 	if err := req.UnmarshalVT(b); err != nil {
 		return 0
 	}
-	response, err := plugin.HandlePluginMessage(context.Background(), req)
+	response, err := service.HandleServiceMessage(context.Background(), req)
 	if err != nil {
 		ptr, size = wasm.ByteToPtr([]byte(err.Error()))
 		return (uint64(ptr) << uint64(32)) | uint64(size) |
@@ -144,6 +144,7 @@ func (h host) KVGet(ctx context.Context, request *KVGetRequest) (*KVGetReply, er
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(KVGetReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -167,6 +168,7 @@ func (h host) KVSet(ctx context.Context, request *KVSetRequest) (*KVSetReply, er
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(KVSetReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -190,6 +192,7 @@ func (h host) KVDelete(ctx context.Context, request *KVDeleteRequest) (*KVDelete
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(KVDeleteReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -213,6 +216,7 @@ func (h host) KVList(ctx context.Context, request *KVListRequest) (*KVListReply,
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(KVListReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -236,6 +240,7 @@ func (h host) GetParams(ctx context.Context, request *ParamsGetRequest) (*Params
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(ParamsGetReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -259,6 +264,7 @@ func (h host) PatchParams(ctx context.Context, request *ParamsPatchRequest) (*Pa
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(ParamsPatchReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -282,6 +288,7 @@ func (h host) Emit(ctx context.Context, request *EmitInstruction) (*EmitReply, e
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(EmitReply)
 	if err = response.UnmarshalVT(buf); err != nil {
@@ -290,23 +297,120 @@ func (h host) Emit(ctx context.Context, request *EmitInstruction) (*EmitReply, e
 	return response, nil
 }
 
-//go:wasmimport env send_plugin_message
-func _send_plugin_message(ptr uint32, size uint32) uint64
+//go:wasmimport env send_service_message
+func _send_service_message(ptr uint32, size uint32) uint64
 
-func (h host) SendPluginMessage(ctx context.Context, request *PluginMessage) (*PluginMessageReply, error) {
+func (h host) SendServiceMessage(ctx context.Context, request *ServiceMessage) (*ServiceMessageReply, error) {
 	buf, err := request.MarshalVT()
 	if err != nil {
 		return nil, err
 	}
 	ptr, size := wasm.ByteToPtr(buf)
-	ptrSize := _send_plugin_message(ptr, size)
+	ptrSize := _send_service_message(ptr, size)
 	wasm.Free(ptr)
 
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
-	response := new(PluginMessageReply)
+	response := new(ServiceMessageReply)
+	if err = response.UnmarshalVT(buf); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+//go:wasmimport env register_transport
+func _register_transport(ptr uint32, size uint32) uint64
+
+func (h host) RegisterTransport(ctx context.Context, request *RegisterTransportRequest) (*RegistrationReply, error) {
+	buf, err := request.MarshalVT()
+	if err != nil {
+		return nil, err
+	}
+	ptr, size := wasm.ByteToPtr(buf)
+	ptrSize := _register_transport(ptr, size)
+	wasm.Free(ptr)
+
+	ptr = uint32(ptrSize >> 32)
+	size = uint32(ptrSize)
+	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
+
+	response := new(RegistrationReply)
+	if err = response.UnmarshalVT(buf); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+//go:wasmimport env unregister_transport
+func _unregister_transport(ptr uint32, size uint32) uint64
+
+func (h host) UnregisterTransport(ctx context.Context, request *UnregisterTransportRequest) (*RegistrationReply, error) {
+	buf, err := request.MarshalVT()
+	if err != nil {
+		return nil, err
+	}
+	ptr, size := wasm.ByteToPtr(buf)
+	ptrSize := _unregister_transport(ptr, size)
+	wasm.Free(ptr)
+
+	ptr = uint32(ptrSize >> 32)
+	size = uint32(ptrSize)
+	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
+
+	response := new(RegistrationReply)
+	if err = response.UnmarshalVT(buf); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+//go:wasmimport env register_routes
+func _register_routes(ptr uint32, size uint32) uint64
+
+func (h host) RegisterRoutes(ctx context.Context, request *RegisterRoutesRequest) (*RegistrationReply, error) {
+	buf, err := request.MarshalVT()
+	if err != nil {
+		return nil, err
+	}
+	ptr, size := wasm.ByteToPtr(buf)
+	ptrSize := _register_routes(ptr, size)
+	wasm.Free(ptr)
+
+	ptr = uint32(ptrSize >> 32)
+	size = uint32(ptrSize)
+	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
+
+	response := new(RegistrationReply)
+	if err = response.UnmarshalVT(buf); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+//go:wasmimport env unregister_routes
+func _unregister_routes(ptr uint32, size uint32) uint64
+
+func (h host) UnregisterRoutes(ctx context.Context, request *UnregisterRoutesRequest) (*RegistrationReply, error) {
+	buf, err := request.MarshalVT()
+	if err != nil {
+		return nil, err
+	}
+	ptr, size := wasm.ByteToPtr(buf)
+	ptrSize := _unregister_routes(ptr, size)
+	wasm.Free(ptr)
+
+	ptr = uint32(ptrSize >> 32)
+	size = uint32(ptrSize)
+	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
+
+	response := new(RegistrationReply)
 	if err = response.UnmarshalVT(buf); err != nil {
 		return nil, err
 	}
@@ -328,6 +432,7 @@ func (h host) Log(ctx context.Context, request *LogRequest) (*LogReply, error) {
 	ptr = uint32(ptrSize >> 32)
 	size = uint32(ptrSize)
 	buf = wasm.PtrToByte(ptr, size)
+	defer wasm.Free(ptr)
 
 	response := new(LogReply)
 	if err = response.UnmarshalVT(buf); err != nil {

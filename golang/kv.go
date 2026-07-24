@@ -5,8 +5,9 @@ import (
 	"fmt"
 )
 
-// KVClient invokes the host KV API with an explicit namespace. It is mainly
-// useful to protocol adapters; plugin code should normally use KVStore.
+// KVClient invokes the host KV API. KVList with an empty namespace lists
+// namespace names; other operations address keys within a namespace. Service
+// code that only needs its own namespace should normally use KVStore.
 type KVClient interface {
 	KVGet(context.Context, string, string) ([]byte, bool, error)
 	KVSet(context.Context, string, string, []byte) error
@@ -28,7 +29,7 @@ type scopedKV struct {
 }
 
 // NewKVStore scopes client to namespace. Operations reject an empty namespace
-// so plugins cannot accidentally access the host-wide namespace listing.
+// so services cannot accidentally access the host-wide namespace listing.
 func NewKVStore(client KVClient, namespace string) KVStore {
 	return scopedKV{client: client, namespace: namespace}
 }

@@ -18,6 +18,12 @@ func (b SocketBinding[Request, Reply]) HandleSocketEvent(ctx context.Context, re
 	if request == nil {
 		return nil, fmt.Errorf("arupa: protocol socket event is nil")
 	}
+	if b.Event == nil {
+		return nil, fmt.Errorf("arupa: protocol socket event converter is nil")
+	}
+	if b.Reply == nil {
+		return nil, fmt.Errorf("arupa: protocol socket event reply converter is nil")
+	}
 	emits, err := events.Handle(ctx, b.Event(request))
 	if err != nil {
 		return nil, err
