@@ -4,7 +4,7 @@
 // 	protoc               v7.35.0
 // source: proto/arupa.proto
 
-package pluginv1
+package servicev2
 
 import (
 	context "context"
@@ -19,7 +19,71 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ===== common request context and access =====
+type TransportType int32
+
+const (
+	TransportType_TRANSPORT_TYPE_UNSPECIFIED TransportType = 0
+	TransportType_TRANSPORT_TYPE_STATIC      TransportType = 1
+	TransportType_TRANSPORT_TYPE_HTTP        TransportType = 2
+	TransportType_TRANSPORT_TYPE_SOCKET_IO   TransportType = 3
+	TransportType_TRANSPORT_TYPE_PROXY       TransportType = 4
+)
+
+// Enum value maps for TransportType.
+var (
+	TransportType_name = map[int32]string{
+		0: "TRANSPORT_TYPE_UNSPECIFIED",
+		1: "TRANSPORT_TYPE_STATIC",
+		2: "TRANSPORT_TYPE_HTTP",
+		3: "TRANSPORT_TYPE_SOCKET_IO",
+		4: "TRANSPORT_TYPE_PROXY",
+	}
+	TransportType_value = map[string]int32{
+		"TRANSPORT_TYPE_UNSPECIFIED": 0,
+		"TRANSPORT_TYPE_STATIC":      1,
+		"TRANSPORT_TYPE_HTTP":        2,
+		"TRANSPORT_TYPE_SOCKET_IO":   3,
+		"TRANSPORT_TYPE_PROXY":       4,
+	}
+)
+
+func (x TransportType) Enum() *TransportType {
+	p := new(TransportType)
+	*p = x
+	return p
+}
+
+type ProxyNetwork int32
+
+const (
+	ProxyNetwork_PROXY_NETWORK_UNSPECIFIED ProxyNetwork = 0
+	ProxyNetwork_PROXY_NETWORK_INHERITED   ProxyNetwork = 1
+	ProxyNetwork_PROXY_NETWORK_UNIX        ProxyNetwork = 2
+	ProxyNetwork_PROXY_NETWORK_TCP         ProxyNetwork = 3
+)
+
+// Enum value maps for ProxyNetwork.
+var (
+	ProxyNetwork_name = map[int32]string{
+		0: "PROXY_NETWORK_UNSPECIFIED",
+		1: "PROXY_NETWORK_INHERITED",
+		2: "PROXY_NETWORK_UNIX",
+		3: "PROXY_NETWORK_TCP",
+	}
+	ProxyNetwork_value = map[string]int32{
+		"PROXY_NETWORK_UNSPECIFIED": 0,
+		"PROXY_NETWORK_INHERITED":   1,
+		"PROXY_NETWORK_UNIX":        2,
+		"PROXY_NETWORK_TCP":         3,
+	}
+)
+
+func (x ProxyNetwork) Enum() *ProxyNetwork {
+	p := new(ProxyNetwork)
+	*p = x
+	return p
+}
+
 type User struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -52,10 +116,8 @@ type AccessPolicy struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Require any authenticated user when groups is empty.
-	RequireAuth bool `protobuf:"varint,1,opt,name=require_auth,json=requireAuth,proto3" json:"require_auth,omitempty"`
-	// A non-empty list requires membership in at least one group.
-	Groups []string `protobuf:"bytes,2,rep,name=groups,proto3" json:"groups,omitempty"`
+	RequireAuth bool     `protobuf:"varint,1,opt,name=require_auth,json=requireAuth,proto3" json:"require_auth,omitempty"`
+	Groups      []string `protobuf:"bytes,2,rep,name=groups,proto3" json:"groups,omitempty"`
 }
 
 func (x *AccessPolicy) ProtoReflect() protoreflect.Message {
@@ -76,38 +138,29 @@ func (x *AccessPolicy) GetGroups() []string {
 	return nil
 }
 
-// ===== HTTP =====
-type HTTPRoute struct {
+type Header struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Method  string        `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`   // GET/POST/...; empty = any method
-	Pattern string        `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"` // e.g. "/hello", "/api/foo/"
-	Access  *AccessPolicy `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+	Name   string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Values []string `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
 }
 
-func (x *HTTPRoute) ProtoReflect() protoreflect.Message {
+func (x *Header) ProtoReflect() protoreflect.Message {
 	panic(`not implemented`)
 }
 
-func (x *HTTPRoute) GetMethod() string {
+func (x *Header) GetName() string {
 	if x != nil {
-		return x.Method
+		return x.Name
 	}
 	return ""
 }
 
-func (x *HTTPRoute) GetPattern() string {
+func (x *Header) GetValues() []string {
 	if x != nil {
-		return x.Pattern
-	}
-	return ""
-}
-
-func (x *HTTPRoute) GetAccess() *AccessPolicy {
-	if x != nil {
-		return x.Access
+		return x.Values
 	}
 	return nil
 }
@@ -117,18 +170,26 @@ type HTTPRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RoutePattern string            `protobuf:"bytes,1,opt,name=route_pattern,json=routePattern,proto3" json:"route_pattern,omitempty"` // the pattern this request matched
-	Method       string            `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
-	Path         string            `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	Query        string            `protobuf:"bytes,4,opt,name=query,proto3" json:"query,omitempty"`
-	Headers      map[string]string `protobuf:"bytes,5,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Body         []byte            `protobuf:"bytes,6,opt,name=body,proto3" json:"body,omitempty"`
-	RemoteAddr   string            `protobuf:"bytes,7,opt,name=remote_addr,json=remoteAddr,proto3" json:"remote_addr,omitempty"`
-	User         *User             `protobuf:"bytes,8,opt,name=user,proto3" json:"user,omitempty"`
+	RouteId      string    `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3" json:"route_id,omitempty"`
+	RoutePattern string    `protobuf:"bytes,2,opt,name=route_pattern,json=routePattern,proto3" json:"route_pattern,omitempty"`
+	Method       string    `protobuf:"bytes,3,opt,name=method,proto3" json:"method,omitempty"`
+	Path         string    `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
+	Query        string    `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	Headers      []*Header `protobuf:"bytes,6,rep,name=headers,proto3" json:"headers,omitempty"`
+	Body         []byte    `protobuf:"bytes,7,opt,name=body,proto3" json:"body,omitempty"`
+	RemoteAddr   string    `protobuf:"bytes,8,opt,name=remote_addr,json=remoteAddr,proto3" json:"remote_addr,omitempty"`
+	User         *User     `protobuf:"bytes,9,opt,name=user,proto3" json:"user,omitempty"`
 }
 
 func (x *HTTPRequest) ProtoReflect() protoreflect.Message {
 	panic(`not implemented`)
+}
+
+func (x *HTTPRequest) GetRouteId() string {
+	if x != nil {
+		return x.RouteId
+	}
+	return ""
 }
 
 func (x *HTTPRequest) GetRoutePattern() string {
@@ -159,7 +220,7 @@ func (x *HTTPRequest) GetQuery() string {
 	return ""
 }
 
-func (x *HTTPRequest) GetHeaders() map[string]string {
+func (x *HTTPRequest) GetHeaders() []*Header {
 	if x != nil {
 		return x.Headers
 	}
@@ -192,9 +253,9 @@ type HTTPResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Status  int32             `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
-	Headers map[string]string `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Body    []byte            `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	Status  int32     `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
+	Headers []*Header `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty"`
+	Body    []byte    `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
 }
 
 func (x *HTTPResponse) ProtoReflect() protoreflect.Message {
@@ -208,7 +269,7 @@ func (x *HTTPResponse) GetStatus() int32 {
 	return 0
 }
 
-func (x *HTTPResponse) GetHeaders() map[string]string {
+func (x *HTTPResponse) GetHeaders() []*Header {
 	if x != nil {
 		return x.Headers
 	}
@@ -222,100 +283,28 @@ func (x *HTTPResponse) GetBody() []byte {
 	return nil
 }
 
-// ===== static files =====
-type StaticMount struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Prefix    string        `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`       // URL path prefix, e.g. "/assets/"
-	Directory string        `protobuf:"bytes,2,opt,name=directory,proto3" json:"directory,omitempty"` // host directory path to serve
-	Access    *AccessPolicy `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
-}
-
-func (x *StaticMount) ProtoReflect() protoreflect.Message {
-	panic(`not implemented`)
-}
-
-func (x *StaticMount) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
-	}
-	return ""
-}
-
-func (x *StaticMount) GetDirectory() string {
-	if x != nil {
-		return x.Directory
-	}
-	return ""
-}
-
-func (x *StaticMount) GetAccess() *AccessPolicy {
-	if x != nil {
-		return x.Access
-	}
-	return nil
-}
-
-// ===== socket.io =====
-type SocketNamespace struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Name        string                   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`     // e.g. "/hello"
-	Events      []string                 `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"` // events the plugin handles
-	Access      *AccessPolicy            `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
-	EventAccess map[string]*AccessPolicy `protobuf:"bytes,4,rep,name=event_access,json=eventAccess,proto3" json:"event_access,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // optional event-specific policies
-}
-
-func (x *SocketNamespace) ProtoReflect() protoreflect.Message {
-	panic(`not implemented`)
-}
-
-func (x *SocketNamespace) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *SocketNamespace) GetEvents() []string {
-	if x != nil {
-		return x.Events
-	}
-	return nil
-}
-
-func (x *SocketNamespace) GetAccess() *AccessPolicy {
-	if x != nil {
-		return x.Access
-	}
-	return nil
-}
-
-func (x *SocketNamespace) GetEventAccess() map[string]*AccessPolicy {
-	if x != nil {
-		return x.EventAccess
-	}
-	return nil
-}
-
 type SocketEvent struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Event     string `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
-	SocketId  string `protobuf:"bytes,3,opt,name=socket_id,json=socketId,proto3" json:"socket_id,omitempty"`
-	Payload   []byte `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"` // JSON-encoded event arguments
-	User      *User  `protobuf:"bytes,5,opt,name=user,proto3" json:"user,omitempty"`
+	RouteId   string `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3" json:"route_id,omitempty"`
+	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Event     string `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
+	SocketId  string `protobuf:"bytes,4,opt,name=socket_id,json=socketId,proto3" json:"socket_id,omitempty"`
+	Payload   []byte `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	User      *User  `protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty"`
 }
 
 func (x *SocketEvent) ProtoReflect() protoreflect.Message {
 	panic(`not implemented`)
+}
+
+func (x *SocketEvent) GetRouteId() string {
+	if x != nil {
+		return x.RouteId
+	}
+	return ""
 }
 
 func (x *SocketEvent) GetNamespace() string {
@@ -359,9 +348,9 @@ type EmitInstruction struct {
 	unknownFields protoimpl.UnknownFields
 
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Target    string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"` // socket id, or empty for broadcast to namespace
+	Target    string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	Event     string `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
-	Payload   []byte `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"` // JSON-encoded emit arguments
+	Payload   []byte `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
 }
 
 func (x *EmitInstruction) ProtoReflect() protoreflect.Message {
@@ -401,8 +390,6 @@ type SocketEventReply struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Emits returned in-reply (used by WASM where the plugin cannot push
-	// spontaneously). gRPC plugins may also use the Host.Emit callback.
 	Emits []*EmitInstruction `protobuf:"bytes,1,rep,name=emits,proto3" json:"emits,omitempty"`
 }
 
@@ -417,16 +404,60 @@ func (x *SocketEventReply) GetEmits() []*EmitInstruction {
 	return nil
 }
 
-// ===== registration =====
+type InheritedListener struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id      string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Fd      uint32 `protobuf:"varint,2,opt,name=fd,proto3" json:"fd,omitempty"`
+	Network string `protobuf:"bytes,3,opt,name=network,proto3" json:"network,omitempty"`
+	Address string `protobuf:"bytes,4,opt,name=address,proto3" json:"address,omitempty"`
+}
+
+func (x *InheritedListener) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *InheritedListener) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *InheritedListener) GetFd() uint32 {
+	if x != nil {
+		return x.Fd
+	}
+	return 0
+}
+
+func (x *InheritedListener) GetNetwork() string {
+	if x != nil {
+		return x.Network
+	}
+	return ""
+}
+
+func (x *InheritedListener) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
 type RegisterRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InstanceId        string            `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	HostCallbackAddr  string            `protobuf:"bytes,2,opt,name=host_callback_addr,json=hostCallbackAddr,proto3" json:"host_callback_addr,omitempty"`                                           // gRPC plugins dial this to call Host.*; WASM ignores
-	HostCallbackToken string            `protobuf:"bytes,3,opt,name=host_callback_token,json=hostCallbackToken,proto3" json:"host_callback_token,omitempty"`                                        // auth token for host callbacks; WASM ignores
-	Params            map[string]string `protobuf:"bytes,4,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // host-provided config params from [Plugins.<name>.params]
+	InstanceId string               `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	Params     map[string]string    `protobuf:"bytes,2,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Listeners  []*InheritedListener `protobuf:"bytes,3,rep,name=listeners,proto3" json:"listeners,omitempty"`
+	// A github.com/hashicorp/go-plugin GRPCBroker stream served by the kernel.
+	// gRPC services dial this ID through their broker to call Host.*.
+	HostBrokerId uint32 `protobuf:"varint,4,opt,name=host_broker_id,json=hostBrokerId,proto3" json:"host_broker_id,omitempty"`
 }
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
@@ -440,20 +471,6 @@ func (x *RegisterRequest) GetInstanceId() string {
 	return ""
 }
 
-func (x *RegisterRequest) GetHostCallbackAddr() string {
-	if x != nil {
-		return x.HostCallbackAddr
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetHostCallbackToken() string {
-	if x != nil {
-		return x.HostCallbackToken
-	}
-	return ""
-}
-
 func (x *RegisterRequest) GetParams() map[string]string {
 	if x != nil {
 		return x.Params
@@ -461,16 +478,27 @@ func (x *RegisterRequest) GetParams() map[string]string {
 	return nil
 }
 
+func (x *RegisterRequest) GetListeners() []*InheritedListener {
+	if x != nil {
+		return x.Listeners
+	}
+	return nil
+}
+
+func (x *RegisterRequest) GetHostBrokerId() uint32 {
+	if x != nil {
+		return x.HostBrokerId
+	}
+	return 0
+}
+
 type RegisterReply struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name             string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version          string             `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	HttpRoutes       []*HTTPRoute       `protobuf:"bytes,3,rep,name=http_routes,json=httpRoutes,proto3" json:"http_routes,omitempty"`
-	SocketNamespaces []*SocketNamespace `protobuf:"bytes,4,rep,name=socket_namespaces,json=socketNamespaces,proto3" json:"socket_namespaces,omitempty"`
-	StaticMounts     []*StaticMount     `protobuf:"bytes,5,rep,name=static_mounts,json=staticMounts,proto3" json:"static_mounts,omitempty"`
+	Name    string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 }
 
 func (x *RegisterReply) ProtoReflect() protoreflect.Message {
@@ -491,28 +519,422 @@ func (x *RegisterReply) GetVersion() string {
 	return ""
 }
 
-func (x *RegisterReply) GetHttpRoutes() []*HTTPRoute {
+type StaticTransport struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Source string `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+}
+
+func (x *StaticTransport) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *StaticTransport) GetSource() string {
 	if x != nil {
-		return x.HttpRoutes
+		return x.Source
+	}
+	return ""
+}
+
+type ProxyTransport struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Network ProxyNetwork `protobuf:"varint,1,opt,name=network,proto3,enum=arupa.service.v2.ProxyNetwork" json:"network,omitempty"`
+	Address string       `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	Scheme  string       `protobuf:"bytes,3,opt,name=scheme,proto3" json:"scheme,omitempty"`
+}
+
+func (x *ProxyTransport) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *ProxyTransport) GetNetwork() ProxyNetwork {
+	if x != nil {
+		return x.Network
+	}
+	return ProxyNetwork_PROXY_NETWORK_UNSPECIFIED
+}
+
+func (x *ProxyTransport) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *ProxyTransport) GetScheme() string {
+	if x != nil {
+		return x.Scheme
+	}
+	return ""
+}
+
+type Transport struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id   string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type TransportType `protobuf:"varint,2,opt,name=type,proto3,enum=arupa.service.v2.TransportType" json:"type,omitempty"`
+	// Types that are assignable to Config:
+	//
+	//	*Transport_Static
+	//	*Transport_Proxy
+	Config isTransport_Config `protobuf_oneof:"config"`
+}
+
+func (x *Transport) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *Transport) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Transport) GetType() TransportType {
+	if x != nil {
+		return x.Type
+	}
+	return TransportType_TRANSPORT_TYPE_UNSPECIFIED
+}
+
+func (m *Transport) GetConfig() isTransport_Config {
+	if m != nil {
+		return m.Config
 	}
 	return nil
 }
 
-func (x *RegisterReply) GetSocketNamespaces() []*SocketNamespace {
-	if x != nil {
-		return x.SocketNamespaces
+func (x *Transport) GetStatic() *StaticTransport {
+	if x, ok := x.GetConfig().(*Transport_Static); ok {
+		return x.Static
 	}
 	return nil
 }
 
-func (x *RegisterReply) GetStaticMounts() []*StaticMount {
-	if x != nil {
-		return x.StaticMounts
+func (x *Transport) GetProxy() *ProxyTransport {
+	if x, ok := x.GetConfig().(*Transport_Proxy); ok {
+		return x.Proxy
 	}
 	return nil
 }
 
-// ===== KV =====
+type isTransport_Config interface {
+	isTransport_Config()
+}
+
+type Transport_Static struct {
+	Static *StaticTransport `protobuf:"bytes,3,opt,name=static,proto3,oneof"`
+}
+
+type Transport_Proxy struct {
+	Proxy *ProxyTransport `protobuf:"bytes,4,opt,name=proxy,proto3,oneof"`
+}
+
+func (*Transport_Static) isTransport_Config() {}
+
+func (*Transport_Proxy) isTransport_Config() {}
+
+type HTTPRoute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Method  string        `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	Pattern string        `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"`
+	Access  *AccessPolicy `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+}
+
+func (x *HTTPRoute) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *HTTPRoute) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *HTTPRoute) GetPattern() string {
+	if x != nil {
+		return x.Pattern
+	}
+	return ""
+}
+
+func (x *HTTPRoute) GetAccess() *AccessPolicy {
+	if x != nil {
+		return x.Access
+	}
+	return nil
+}
+
+type SocketIORoute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Namespace   string                   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Events      []string                 `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"`
+	Access      *AccessPolicy            `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+	EventAccess map[string]*AccessPolicy `protobuf:"bytes,4,rep,name=event_access,json=eventAccess,proto3" json:"event_access,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *SocketIORoute) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *SocketIORoute) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *SocketIORoute) GetEvents() []string {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+func (x *SocketIORoute) GetAccess() *AccessPolicy {
+	if x != nil {
+		return x.Access
+	}
+	return nil
+}
+
+func (x *SocketIORoute) GetEventAccess() map[string]*AccessPolicy {
+	if x != nil {
+		return x.EventAccess
+	}
+	return nil
+}
+
+type Route struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TransportId string `protobuf:"bytes,2,opt,name=transport_id,json=transportId,proto3" json:"transport_id,omitempty"`
+	// Types that are assignable to Route:
+	//
+	//	*Route_Http
+	//	*Route_SocketIo
+	Route isRoute_Route `protobuf_oneof:"route"`
+}
+
+func (x *Route) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *Route) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Route) GetTransportId() string {
+	if x != nil {
+		return x.TransportId
+	}
+	return ""
+}
+
+func (m *Route) GetRoute() isRoute_Route {
+	if m != nil {
+		return m.Route
+	}
+	return nil
+}
+
+func (x *Route) GetHttp() *HTTPRoute {
+	if x, ok := x.GetRoute().(*Route_Http); ok {
+		return x.Http
+	}
+	return nil
+}
+
+func (x *Route) GetSocketIo() *SocketIORoute {
+	if x, ok := x.GetRoute().(*Route_SocketIo); ok {
+		return x.SocketIo
+	}
+	return nil
+}
+
+type isRoute_Route interface {
+	isRoute_Route()
+}
+
+type Route_Http struct {
+	Http *HTTPRoute `protobuf:"bytes,3,opt,name=http,proto3,oneof"`
+}
+
+type Route_SocketIo struct {
+	SocketIo *SocketIORoute `protobuf:"bytes,4,opt,name=socket_io,json=socketIo,proto3,oneof"`
+}
+
+func (*Route_Http) isRoute_Route() {}
+
+func (*Route_SocketIo) isRoute_Route() {}
+
+type RegisterTransportRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Transport *Transport `protobuf:"bytes,1,opt,name=transport,proto3" json:"transport,omitempty"`
+}
+
+func (x *RegisterTransportRequest) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *RegisterTransportRequest) GetTransport() *Transport {
+	if x != nil {
+		return x.Transport
+	}
+	return nil
+}
+
+type UnregisterTransportRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *UnregisterTransportRequest) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *UnregisterTransportRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RegisterRoutesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Routes []*Route `protobuf:"bytes,1,rep,name=routes,proto3" json:"routes,omitempty"`
+}
+
+func (x *RegisterRoutesRequest) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *RegisterRoutesRequest) GetRoutes() []*Route {
+	if x != nil {
+		return x.Routes
+	}
+	return nil
+}
+
+type UnregisterRoutesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Ids []string `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+}
+
+func (x *UnregisterRoutesRequest) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *UnregisterRoutesRequest) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+type RegistrationFailure struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id    string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Error string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *RegistrationFailure) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *RegistrationFailure) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RegistrationFailure) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type RegistrationReply struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Registered []string               `protobuf:"bytes,1,rep,name=registered,proto3" json:"registered,omitempty"`
+	Failures   []*RegistrationFailure `protobuf:"bytes,2,rep,name=failures,proto3" json:"failures,omitempty"`
+	Degraded   bool                   `protobuf:"varint,3,opt,name=degraded,proto3" json:"degraded,omitempty"`
+	Error      string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *RegistrationReply) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *RegistrationReply) GetRegistered() []string {
+	if x != nil {
+		return x.Registered
+	}
+	return nil
+}
+
+func (x *RegistrationReply) GetFailures() []*RegistrationFailure {
+	if x != nil {
+		return x.Failures
+	}
+	return nil
+}
+
+func (x *RegistrationReply) GetDegraded() bool {
+	if x != nil {
+		return x.Degraded
+	}
+	return false
+}
+
+func (x *RegistrationReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type KVGetRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -724,8 +1146,6 @@ func (x *EmitReply) GetError() string {
 	return ""
 }
 
-// ===== persisted plugin params =====
-// The caller is identified by the authenticated host callback context.
 type ParamsGetRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -809,51 +1229,50 @@ func (x *ParamsPatchReply) GetError() string {
 	return ""
 }
 
-// ===== plugin messages =====
-type PluginMessage struct {
+type ServiceMessage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Source  string `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"` // set by host to the registered plugin name; caller-supplied values are ignored
-	Target  string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"` // registered plugin name to deliver to
+	Source  string `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Target  string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	Topic   string `protobuf:"bytes,3,opt,name=topic,proto3" json:"topic,omitempty"`
 	Payload []byte `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
 }
 
-func (x *PluginMessage) ProtoReflect() protoreflect.Message {
+func (x *ServiceMessage) ProtoReflect() protoreflect.Message {
 	panic(`not implemented`)
 }
 
-func (x *PluginMessage) GetSource() string {
+func (x *ServiceMessage) GetSource() string {
 	if x != nil {
 		return x.Source
 	}
 	return ""
 }
 
-func (x *PluginMessage) GetTarget() string {
+func (x *ServiceMessage) GetTarget() string {
 	if x != nil {
 		return x.Target
 	}
 	return ""
 }
 
-func (x *PluginMessage) GetTopic() string {
+func (x *ServiceMessage) GetTopic() string {
 	if x != nil {
 		return x.Topic
 	}
 	return ""
 }
 
-func (x *PluginMessage) GetPayload() []byte {
+func (x *ServiceMessage) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-type PluginMessageReply struct {
+type ServiceMessageReply struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -862,18 +1281,18 @@ type PluginMessageReply struct {
 	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 }
 
-func (x *PluginMessageReply) ProtoReflect() protoreflect.Message {
+func (x *ServiceMessageReply) ProtoReflect() protoreflect.Message {
 	panic(`not implemented`)
 }
 
-func (x *PluginMessageReply) GetError() string {
+func (x *ServiceMessageReply) GetError() string {
 	if x != nil {
 		return x.Error
 	}
 	return ""
 }
 
-func (x *PluginMessageReply) GetMessage() string {
+func (x *ServiceMessageReply) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -917,21 +1336,14 @@ func (x *LogReply) ProtoReflect() protoreflect.Message {
 	panic(`not implemented`)
 }
 
-// host -> plugin (shared by both backends, all unary)
-// go:plugin type=plugin version=1
-type Plugin interface {
+// go:plugin type=plugin version=2
+type Service interface {
 	Register(context.Context, *RegisterRequest) (*RegisterReply, error)
 	HandleHTTP(context.Context, *HTTPRequest) (*HTTPResponse, error)
 	HandleSocketEvent(context.Context, *SocketEvent) (*SocketEventReply, error)
-	HandlePluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error)
+	HandleServiceMessage(context.Context, *ServiceMessage) (*ServiceMessageReply, error)
 }
 
-// plugin -> host (shared service for both backends)
-// WASM: protoc-gen-go-plugin generates host functions imported by the module.
-// gRPC: protoc-gen-go-grpc generates a standard server the host runs on
-//
-//	localhost; plugins dial host_callback_addr to call these.
-//
 // go:plugin type=host
 type Host interface {
 	KVGet(context.Context, *KVGetRequest) (*KVGetReply, error)
@@ -941,6 +1353,10 @@ type Host interface {
 	GetParams(context.Context, *ParamsGetRequest) (*ParamsGetReply, error)
 	PatchParams(context.Context, *ParamsPatchRequest) (*ParamsPatchReply, error)
 	Emit(context.Context, *EmitInstruction) (*EmitReply, error)
-	SendPluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error)
+	SendServiceMessage(context.Context, *ServiceMessage) (*ServiceMessageReply, error)
+	RegisterTransport(context.Context, *RegisterTransportRequest) (*RegistrationReply, error)
+	UnregisterTransport(context.Context, *UnregisterTransportRequest) (*RegistrationReply, error)
+	RegisterRoutes(context.Context, *RegisterRoutesRequest) (*RegistrationReply, error)
+	UnregisterRoutes(context.Context, *UnregisterRoutesRequest) (*RegistrationReply, error)
 	Log(context.Context, *LogRequest) (*LogReply, error)
 }

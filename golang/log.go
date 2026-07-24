@@ -33,8 +33,8 @@ func NormalizeLogLevel(level LogLevel) (LogLevel, error) {
 	}
 }
 
-// Logger sends plugin log records to the host. The host authenticates the
-// caller and adds its registered plugin name to every record.
+// Logger sends service log records to the host. The host authenticates the
+// caller and adds its registered service name to every record.
 type Logger interface {
 	Log(context.Context, LogLevel, string) error
 }

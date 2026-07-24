@@ -4,7 +4,7 @@
 // - protoc             v7.35.0
 // source: proto/arupa.proto
 
-package pluginv1
+package servicev2
 
 import (
 	context "context"
@@ -19,221 +19,219 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Plugin_Register_FullMethodName            = "/arupa.plugin.v1.Plugin/Register"
-	Plugin_HandleHTTP_FullMethodName          = "/arupa.plugin.v1.Plugin/HandleHTTP"
-	Plugin_HandleSocketEvent_FullMethodName   = "/arupa.plugin.v1.Plugin/HandleSocketEvent"
-	Plugin_HandlePluginMessage_FullMethodName = "/arupa.plugin.v1.Plugin/HandlePluginMessage"
+	Service_Register_FullMethodName             = "/arupa.service.v2.Service/Register"
+	Service_HandleHTTP_FullMethodName           = "/arupa.service.v2.Service/HandleHTTP"
+	Service_HandleSocketEvent_FullMethodName    = "/arupa.service.v2.Service/HandleSocketEvent"
+	Service_HandleServiceMessage_FullMethodName = "/arupa.service.v2.Service/HandleServiceMessage"
 )
 
-// PluginClient is the client API for Plugin service.
+// ServiceClient is the client API for Service service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// host -> plugin (shared by both backends, all unary)
-// go:plugin type=plugin version=1
-type PluginClient interface {
+// go:plugin type=plugin version=2
+type ServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterReply, error)
 	HandleHTTP(ctx context.Context, in *HTTPRequest, opts ...grpc.CallOption) (*HTTPResponse, error)
 	HandleSocketEvent(ctx context.Context, in *SocketEvent, opts ...grpc.CallOption) (*SocketEventReply, error)
-	HandlePluginMessage(ctx context.Context, in *PluginMessage, opts ...grpc.CallOption) (*PluginMessageReply, error)
+	HandleServiceMessage(ctx context.Context, in *ServiceMessage, opts ...grpc.CallOption) (*ServiceMessageReply, error)
 }
 
-type pluginClient struct {
+type serviceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewPluginClient(cc grpc.ClientConnInterface) PluginClient {
-	return &pluginClient{cc}
+func NewServiceClient(cc grpc.ClientConnInterface) ServiceClient {
+	return &serviceClient{cc}
 }
 
-func (c *pluginClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterReply, error) {
+func (c *serviceClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RegisterReply)
-	err := c.cc.Invoke(ctx, Plugin_Register_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Service_Register_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *pluginClient) HandleHTTP(ctx context.Context, in *HTTPRequest, opts ...grpc.CallOption) (*HTTPResponse, error) {
+func (c *serviceClient) HandleHTTP(ctx context.Context, in *HTTPRequest, opts ...grpc.CallOption) (*HTTPResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HTTPResponse)
-	err := c.cc.Invoke(ctx, Plugin_HandleHTTP_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Service_HandleHTTP_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *pluginClient) HandleSocketEvent(ctx context.Context, in *SocketEvent, opts ...grpc.CallOption) (*SocketEventReply, error) {
+func (c *serviceClient) HandleSocketEvent(ctx context.Context, in *SocketEvent, opts ...grpc.CallOption) (*SocketEventReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SocketEventReply)
-	err := c.cc.Invoke(ctx, Plugin_HandleSocketEvent_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Service_HandleSocketEvent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *pluginClient) HandlePluginMessage(ctx context.Context, in *PluginMessage, opts ...grpc.CallOption) (*PluginMessageReply, error) {
+func (c *serviceClient) HandleServiceMessage(ctx context.Context, in *ServiceMessage, opts ...grpc.CallOption) (*ServiceMessageReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PluginMessageReply)
-	err := c.cc.Invoke(ctx, Plugin_HandlePluginMessage_FullMethodName, in, out, cOpts...)
+	out := new(ServiceMessageReply)
+	err := c.cc.Invoke(ctx, Service_HandleServiceMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// PluginServer is the server API for Plugin service.
-// All implementations must embed UnimplementedPluginServer
+// ServiceServer is the server API for Service service.
+// All implementations must embed UnimplementedServiceServer
 // for forward compatibility.
 //
-// host -> plugin (shared by both backends, all unary)
-// go:plugin type=plugin version=1
-type PluginServer interface {
+// go:plugin type=plugin version=2
+type ServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterReply, error)
 	HandleHTTP(context.Context, *HTTPRequest) (*HTTPResponse, error)
 	HandleSocketEvent(context.Context, *SocketEvent) (*SocketEventReply, error)
-	HandlePluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error)
-	mustEmbedUnimplementedPluginServer()
+	HandleServiceMessage(context.Context, *ServiceMessage) (*ServiceMessageReply, error)
+	mustEmbedUnimplementedServiceServer()
 }
 
-// UnimplementedPluginServer must be embedded to have
+// UnimplementedServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedPluginServer struct{}
+type UnimplementedServiceServer struct{}
 
-func (UnimplementedPluginServer) Register(context.Context, *RegisterRequest) (*RegisterReply, error) {
+func (UnimplementedServiceServer) Register(context.Context, *RegisterRequest) (*RegisterReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedPluginServer) HandleHTTP(context.Context, *HTTPRequest) (*HTTPResponse, error) {
+func (UnimplementedServiceServer) HandleHTTP(context.Context, *HTTPRequest) (*HTTPResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleHTTP not implemented")
 }
-func (UnimplementedPluginServer) HandleSocketEvent(context.Context, *SocketEvent) (*SocketEventReply, error) {
+func (UnimplementedServiceServer) HandleSocketEvent(context.Context, *SocketEvent) (*SocketEventReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleSocketEvent not implemented")
 }
-func (UnimplementedPluginServer) HandlePluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method HandlePluginMessage not implemented")
+func (UnimplementedServiceServer) HandleServiceMessage(context.Context, *ServiceMessage) (*ServiceMessageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleServiceMessage not implemented")
 }
-func (UnimplementedPluginServer) mustEmbedUnimplementedPluginServer() {}
-func (UnimplementedPluginServer) testEmbeddedByValue()                {}
+func (UnimplementedServiceServer) mustEmbedUnimplementedServiceServer() {}
+func (UnimplementedServiceServer) testEmbeddedByValue()                 {}
 
-// UnsafePluginServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to PluginServer will
+// UnsafeServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ServiceServer will
 // result in compilation errors.
-type UnsafePluginServer interface {
-	mustEmbedUnimplementedPluginServer()
+type UnsafeServiceServer interface {
+	mustEmbedUnimplementedServiceServer()
 }
 
-func RegisterPluginServer(s grpc.ServiceRegistrar, srv PluginServer) {
-	// If the following call pancis, it indicates UnimplementedPluginServer was
+func RegisterServiceServer(s grpc.ServiceRegistrar, srv ServiceServer) {
+	// If the following call pancis, it indicates UnimplementedServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Plugin_ServiceDesc, srv)
+	s.RegisterService(&Service_ServiceDesc, srv)
 }
 
-func _Plugin_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Service_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PluginServer).Register(ctx, in)
+		return srv.(ServiceServer).Register(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Plugin_Register_FullMethodName,
+		FullMethod: Service_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginServer).Register(ctx, req.(*RegisterRequest))
+		return srv.(ServiceServer).Register(ctx, req.(*RegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Plugin_HandleHTTP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Service_HandleHTTP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HTTPRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PluginServer).HandleHTTP(ctx, in)
+		return srv.(ServiceServer).HandleHTTP(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Plugin_HandleHTTP_FullMethodName,
+		FullMethod: Service_HandleHTTP_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginServer).HandleHTTP(ctx, req.(*HTTPRequest))
+		return srv.(ServiceServer).HandleHTTP(ctx, req.(*HTTPRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Plugin_HandleSocketEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Service_HandleSocketEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SocketEvent)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PluginServer).HandleSocketEvent(ctx, in)
+		return srv.(ServiceServer).HandleSocketEvent(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Plugin_HandleSocketEvent_FullMethodName,
+		FullMethod: Service_HandleSocketEvent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginServer).HandleSocketEvent(ctx, req.(*SocketEvent))
+		return srv.(ServiceServer).HandleSocketEvent(ctx, req.(*SocketEvent))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Plugin_HandlePluginMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PluginMessage)
+func _Service_HandleServiceMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PluginServer).HandlePluginMessage(ctx, in)
+		return srv.(ServiceServer).HandleServiceMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Plugin_HandlePluginMessage_FullMethodName,
+		FullMethod: Service_HandleServiceMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginServer).HandlePluginMessage(ctx, req.(*PluginMessage))
+		return srv.(ServiceServer).HandleServiceMessage(ctx, req.(*ServiceMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Plugin_ServiceDesc is the grpc.ServiceDesc for Plugin service.
+// Service_ServiceDesc is the grpc.ServiceDesc for Service service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Plugin_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "arupa.plugin.v1.Plugin",
-	HandlerType: (*PluginServer)(nil),
+var Service_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "arupa.service.v2.Service",
+	HandlerType: (*ServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Register",
-			Handler:    _Plugin_Register_Handler,
+			Handler:    _Service_Register_Handler,
 		},
 		{
 			MethodName: "HandleHTTP",
-			Handler:    _Plugin_HandleHTTP_Handler,
+			Handler:    _Service_HandleHTTP_Handler,
 		},
 		{
 			MethodName: "HandleSocketEvent",
-			Handler:    _Plugin_HandleSocketEvent_Handler,
+			Handler:    _Service_HandleSocketEvent_Handler,
 		},
 		{
-			MethodName: "HandlePluginMessage",
-			Handler:    _Plugin_HandlePluginMessage_Handler,
+			MethodName: "HandleServiceMessage",
+			Handler:    _Service_HandleServiceMessage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -241,26 +239,24 @@ var Plugin_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	Host_KVGet_FullMethodName             = "/arupa.plugin.v1.Host/KVGet"
-	Host_KVSet_FullMethodName             = "/arupa.plugin.v1.Host/KVSet"
-	Host_KVDelete_FullMethodName          = "/arupa.plugin.v1.Host/KVDelete"
-	Host_KVList_FullMethodName            = "/arupa.plugin.v1.Host/KVList"
-	Host_GetParams_FullMethodName         = "/arupa.plugin.v1.Host/GetParams"
-	Host_PatchParams_FullMethodName       = "/arupa.plugin.v1.Host/PatchParams"
-	Host_Emit_FullMethodName              = "/arupa.plugin.v1.Host/Emit"
-	Host_SendPluginMessage_FullMethodName = "/arupa.plugin.v1.Host/SendPluginMessage"
-	Host_Log_FullMethodName               = "/arupa.plugin.v1.Host/Log"
+	Host_KVGet_FullMethodName               = "/arupa.service.v2.Host/KVGet"
+	Host_KVSet_FullMethodName               = "/arupa.service.v2.Host/KVSet"
+	Host_KVDelete_FullMethodName            = "/arupa.service.v2.Host/KVDelete"
+	Host_KVList_FullMethodName              = "/arupa.service.v2.Host/KVList"
+	Host_GetParams_FullMethodName           = "/arupa.service.v2.Host/GetParams"
+	Host_PatchParams_FullMethodName         = "/arupa.service.v2.Host/PatchParams"
+	Host_Emit_FullMethodName                = "/arupa.service.v2.Host/Emit"
+	Host_SendServiceMessage_FullMethodName  = "/arupa.service.v2.Host/SendServiceMessage"
+	Host_RegisterTransport_FullMethodName   = "/arupa.service.v2.Host/RegisterTransport"
+	Host_UnregisterTransport_FullMethodName = "/arupa.service.v2.Host/UnregisterTransport"
+	Host_RegisterRoutes_FullMethodName      = "/arupa.service.v2.Host/RegisterRoutes"
+	Host_UnregisterRoutes_FullMethodName    = "/arupa.service.v2.Host/UnregisterRoutes"
+	Host_Log_FullMethodName                 = "/arupa.service.v2.Host/Log"
 )
 
 // HostClient is the client API for Host service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// plugin -> host (shared service for both backends)
-// WASM: protoc-gen-go-plugin generates host functions imported by the module.
-// gRPC: protoc-gen-go-grpc generates a standard server the host runs on
-//
-//	localhost; plugins dial host_callback_addr to call these.
 //
 // go:plugin type=host
 type HostClient interface {
@@ -271,7 +267,11 @@ type HostClient interface {
 	GetParams(ctx context.Context, in *ParamsGetRequest, opts ...grpc.CallOption) (*ParamsGetReply, error)
 	PatchParams(ctx context.Context, in *ParamsPatchRequest, opts ...grpc.CallOption) (*ParamsPatchReply, error)
 	Emit(ctx context.Context, in *EmitInstruction, opts ...grpc.CallOption) (*EmitReply, error)
-	SendPluginMessage(ctx context.Context, in *PluginMessage, opts ...grpc.CallOption) (*PluginMessageReply, error)
+	SendServiceMessage(ctx context.Context, in *ServiceMessage, opts ...grpc.CallOption) (*ServiceMessageReply, error)
+	RegisterTransport(ctx context.Context, in *RegisterTransportRequest, opts ...grpc.CallOption) (*RegistrationReply, error)
+	UnregisterTransport(ctx context.Context, in *UnregisterTransportRequest, opts ...grpc.CallOption) (*RegistrationReply, error)
+	RegisterRoutes(ctx context.Context, in *RegisterRoutesRequest, opts ...grpc.CallOption) (*RegistrationReply, error)
+	UnregisterRoutes(ctx context.Context, in *UnregisterRoutesRequest, opts ...grpc.CallOption) (*RegistrationReply, error)
 	Log(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogReply, error)
 }
 
@@ -353,10 +353,50 @@ func (c *hostClient) Emit(ctx context.Context, in *EmitInstruction, opts ...grpc
 	return out, nil
 }
 
-func (c *hostClient) SendPluginMessage(ctx context.Context, in *PluginMessage, opts ...grpc.CallOption) (*PluginMessageReply, error) {
+func (c *hostClient) SendServiceMessage(ctx context.Context, in *ServiceMessage, opts ...grpc.CallOption) (*ServiceMessageReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PluginMessageReply)
-	err := c.cc.Invoke(ctx, Host_SendPluginMessage_FullMethodName, in, out, cOpts...)
+	out := new(ServiceMessageReply)
+	err := c.cc.Invoke(ctx, Host_SendServiceMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostClient) RegisterTransport(ctx context.Context, in *RegisterTransportRequest, opts ...grpc.CallOption) (*RegistrationReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegistrationReply)
+	err := c.cc.Invoke(ctx, Host_RegisterTransport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostClient) UnregisterTransport(ctx context.Context, in *UnregisterTransportRequest, opts ...grpc.CallOption) (*RegistrationReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegistrationReply)
+	err := c.cc.Invoke(ctx, Host_UnregisterTransport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostClient) RegisterRoutes(ctx context.Context, in *RegisterRoutesRequest, opts ...grpc.CallOption) (*RegistrationReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegistrationReply)
+	err := c.cc.Invoke(ctx, Host_RegisterRoutes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostClient) UnregisterRoutes(ctx context.Context, in *UnregisterRoutesRequest, opts ...grpc.CallOption) (*RegistrationReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegistrationReply)
+	err := c.cc.Invoke(ctx, Host_UnregisterRoutes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -377,12 +417,6 @@ func (c *hostClient) Log(ctx context.Context, in *LogRequest, opts ...grpc.CallO
 // All implementations must embed UnimplementedHostServer
 // for forward compatibility.
 //
-// plugin -> host (shared service for both backends)
-// WASM: protoc-gen-go-plugin generates host functions imported by the module.
-// gRPC: protoc-gen-go-grpc generates a standard server the host runs on
-//
-//	localhost; plugins dial host_callback_addr to call these.
-//
 // go:plugin type=host
 type HostServer interface {
 	KVGet(context.Context, *KVGetRequest) (*KVGetReply, error)
@@ -392,7 +426,11 @@ type HostServer interface {
 	GetParams(context.Context, *ParamsGetRequest) (*ParamsGetReply, error)
 	PatchParams(context.Context, *ParamsPatchRequest) (*ParamsPatchReply, error)
 	Emit(context.Context, *EmitInstruction) (*EmitReply, error)
-	SendPluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error)
+	SendServiceMessage(context.Context, *ServiceMessage) (*ServiceMessageReply, error)
+	RegisterTransport(context.Context, *RegisterTransportRequest) (*RegistrationReply, error)
+	UnregisterTransport(context.Context, *UnregisterTransportRequest) (*RegistrationReply, error)
+	RegisterRoutes(context.Context, *RegisterRoutesRequest) (*RegistrationReply, error)
+	UnregisterRoutes(context.Context, *UnregisterRoutesRequest) (*RegistrationReply, error)
 	Log(context.Context, *LogRequest) (*LogReply, error)
 	mustEmbedUnimplementedHostServer()
 }
@@ -425,8 +463,20 @@ func (UnimplementedHostServer) PatchParams(context.Context, *ParamsPatchRequest)
 func (UnimplementedHostServer) Emit(context.Context, *EmitInstruction) (*EmitReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Emit not implemented")
 }
-func (UnimplementedHostServer) SendPluginMessage(context.Context, *PluginMessage) (*PluginMessageReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendPluginMessage not implemented")
+func (UnimplementedHostServer) SendServiceMessage(context.Context, *ServiceMessage) (*ServiceMessageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendServiceMessage not implemented")
+}
+func (UnimplementedHostServer) RegisterTransport(context.Context, *RegisterTransportRequest) (*RegistrationReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterTransport not implemented")
+}
+func (UnimplementedHostServer) UnregisterTransport(context.Context, *UnregisterTransportRequest) (*RegistrationReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnregisterTransport not implemented")
+}
+func (UnimplementedHostServer) RegisterRoutes(context.Context, *RegisterRoutesRequest) (*RegistrationReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterRoutes not implemented")
+}
+func (UnimplementedHostServer) UnregisterRoutes(context.Context, *UnregisterRoutesRequest) (*RegistrationReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnregisterRoutes not implemented")
 }
 func (UnimplementedHostServer) Log(context.Context, *LogRequest) (*LogReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Log not implemented")
@@ -578,20 +628,92 @@ func _Host_Emit_Handler(srv interface{}, ctx context.Context, dec func(interface
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Host_SendPluginMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PluginMessage)
+func _Host_SendServiceMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HostServer).SendPluginMessage(ctx, in)
+		return srv.(HostServer).SendServiceMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Host_SendPluginMessage_FullMethodName,
+		FullMethod: Host_SendServiceMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HostServer).SendPluginMessage(ctx, req.(*PluginMessage))
+		return srv.(HostServer).SendServiceMessage(ctx, req.(*ServiceMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Host_RegisterTransport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterTransportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServer).RegisterTransport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Host_RegisterTransport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServer).RegisterTransport(ctx, req.(*RegisterTransportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Host_UnregisterTransport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnregisterTransportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServer).UnregisterTransport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Host_UnregisterTransport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServer).UnregisterTransport(ctx, req.(*UnregisterTransportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Host_RegisterRoutes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRoutesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServer).RegisterRoutes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Host_RegisterRoutes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServer).RegisterRoutes(ctx, req.(*RegisterRoutesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Host_UnregisterRoutes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnregisterRoutesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServer).UnregisterRoutes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Host_UnregisterRoutes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServer).UnregisterRoutes(ctx, req.(*UnregisterRoutesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -618,7 +740,7 @@ func _Host_Log_Handler(srv interface{}, ctx context.Context, dec func(interface{
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Host_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "arupa.plugin.v1.Host",
+	ServiceName: "arupa.service.v2.Host",
 	HandlerType: (*HostServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -650,8 +772,24 @@ var Host_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Host_Emit_Handler,
 		},
 		{
-			MethodName: "SendPluginMessage",
-			Handler:    _Host_SendPluginMessage_Handler,
+			MethodName: "SendServiceMessage",
+			Handler:    _Host_SendServiceMessage_Handler,
+		},
+		{
+			MethodName: "RegisterTransport",
+			Handler:    _Host_RegisterTransport_Handler,
+		},
+		{
+			MethodName: "UnregisterTransport",
+			Handler:    _Host_UnregisterTransport_Handler,
+		},
+		{
+			MethodName: "RegisterRoutes",
+			Handler:    _Host_RegisterRoutes_Handler,
+		},
+		{
+			MethodName: "UnregisterRoutes",
+			Handler:    _Host_UnregisterRoutes_Handler,
 		},
 		{
 			MethodName: "Log",

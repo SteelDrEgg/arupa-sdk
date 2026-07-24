@@ -6,7 +6,7 @@
 // 	protoc               v7.35.0
 // source: proto/arupa.proto
 
-package pluginv1
+package servicev2
 
 import (
 	context "context"
@@ -68,9 +68,29 @@ func (h _host) Instantiate(ctx context.Context, r wazero.Runtime) error {
 		Export("emit")
 
 	envBuilder.NewFunctionBuilder().
-		WithGoModuleFunction(api.GoModuleFunc(h._SendPluginMessage), []api.ValueType{i32, i32}, []api.ValueType{i64}).
+		WithGoModuleFunction(api.GoModuleFunc(h._SendServiceMessage), []api.ValueType{i32, i32}, []api.ValueType{i64}).
 		WithParameterNames("offset", "size").
-		Export("send_plugin_message")
+		Export("send_service_message")
+
+	envBuilder.NewFunctionBuilder().
+		WithGoModuleFunction(api.GoModuleFunc(h._RegisterTransport), []api.ValueType{i32, i32}, []api.ValueType{i64}).
+		WithParameterNames("offset", "size").
+		Export("register_transport")
+
+	envBuilder.NewFunctionBuilder().
+		WithGoModuleFunction(api.GoModuleFunc(h._UnregisterTransport), []api.ValueType{i32, i32}, []api.ValueType{i64}).
+		WithParameterNames("offset", "size").
+		Export("unregister_transport")
+
+	envBuilder.NewFunctionBuilder().
+		WithGoModuleFunction(api.GoModuleFunc(h._RegisterRoutes), []api.ValueType{i32, i32}, []api.ValueType{i64}).
+		WithParameterNames("offset", "size").
+		Export("register_routes")
+
+	envBuilder.NewFunctionBuilder().
+		WithGoModuleFunction(api.GoModuleFunc(h._UnregisterRoutes), []api.ValueType{i32, i32}, []api.ValueType{i64}).
+		WithParameterNames("offset", "size").
+		Export("unregister_routes")
 
 	envBuilder.NewFunctionBuilder().
 		WithGoModuleFunction(api.GoModuleFunc(h._Log), []api.ValueType{i32, i32}, []api.ValueType{i64}).
@@ -270,18 +290,126 @@ func (h _host) _Emit(ctx context.Context, m api.Module, stack []uint64) {
 	stack[0] = ptrLen
 }
 
-func (h _host) _SendPluginMessage(ctx context.Context, m api.Module, stack []uint64) {
+func (h _host) _SendServiceMessage(ctx context.Context, m api.Module, stack []uint64) {
 	offset, size := uint32(stack[0]), uint32(stack[1])
 	buf, err := wasm.ReadMemory(m.Memory(), offset, size)
 	if err != nil {
 		panic(err)
 	}
-	request := new(PluginMessage)
+	request := new(ServiceMessage)
 	err = request.UnmarshalVT(buf)
 	if err != nil {
 		panic(err)
 	}
-	resp, err := h.SendPluginMessage(ctx, request)
+	resp, err := h.SendServiceMessage(ctx, request)
+	if err != nil {
+		panic(err)
+	}
+	buf, err = resp.MarshalVT()
+	if err != nil {
+		panic(err)
+	}
+	ptr, err := wasm.WriteMemory(ctx, m, buf)
+	if err != nil {
+		panic(err)
+	}
+	ptrLen := (ptr << uint64(32)) | uint64(len(buf))
+	stack[0] = ptrLen
+}
+
+func (h _host) _RegisterTransport(ctx context.Context, m api.Module, stack []uint64) {
+	offset, size := uint32(stack[0]), uint32(stack[1])
+	buf, err := wasm.ReadMemory(m.Memory(), offset, size)
+	if err != nil {
+		panic(err)
+	}
+	request := new(RegisterTransportRequest)
+	err = request.UnmarshalVT(buf)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := h.RegisterTransport(ctx, request)
+	if err != nil {
+		panic(err)
+	}
+	buf, err = resp.MarshalVT()
+	if err != nil {
+		panic(err)
+	}
+	ptr, err := wasm.WriteMemory(ctx, m, buf)
+	if err != nil {
+		panic(err)
+	}
+	ptrLen := (ptr << uint64(32)) | uint64(len(buf))
+	stack[0] = ptrLen
+}
+
+func (h _host) _UnregisterTransport(ctx context.Context, m api.Module, stack []uint64) {
+	offset, size := uint32(stack[0]), uint32(stack[1])
+	buf, err := wasm.ReadMemory(m.Memory(), offset, size)
+	if err != nil {
+		panic(err)
+	}
+	request := new(UnregisterTransportRequest)
+	err = request.UnmarshalVT(buf)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := h.UnregisterTransport(ctx, request)
+	if err != nil {
+		panic(err)
+	}
+	buf, err = resp.MarshalVT()
+	if err != nil {
+		panic(err)
+	}
+	ptr, err := wasm.WriteMemory(ctx, m, buf)
+	if err != nil {
+		panic(err)
+	}
+	ptrLen := (ptr << uint64(32)) | uint64(len(buf))
+	stack[0] = ptrLen
+}
+
+func (h _host) _RegisterRoutes(ctx context.Context, m api.Module, stack []uint64) {
+	offset, size := uint32(stack[0]), uint32(stack[1])
+	buf, err := wasm.ReadMemory(m.Memory(), offset, size)
+	if err != nil {
+		panic(err)
+	}
+	request := new(RegisterRoutesRequest)
+	err = request.UnmarshalVT(buf)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := h.RegisterRoutes(ctx, request)
+	if err != nil {
+		panic(err)
+	}
+	buf, err = resp.MarshalVT()
+	if err != nil {
+		panic(err)
+	}
+	ptr, err := wasm.WriteMemory(ctx, m, buf)
+	if err != nil {
+		panic(err)
+	}
+	ptrLen := (ptr << uint64(32)) | uint64(len(buf))
+	stack[0] = ptrLen
+}
+
+func (h _host) _UnregisterRoutes(ctx context.Context, m api.Module, stack []uint64) {
+	offset, size := uint32(stack[0]), uint32(stack[1])
+	buf, err := wasm.ReadMemory(m.Memory(), offset, size)
+	if err != nil {
+		panic(err)
+	}
+	request := new(UnregisterRoutesRequest)
+	err = request.UnmarshalVT(buf)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := h.UnregisterRoutes(ctx, request)
 	if err != nil {
 		panic(err)
 	}
@@ -324,14 +452,14 @@ func (h _host) _Log(ctx context.Context, m api.Module, stack []uint64) {
 	stack[0] = ptrLen
 }
 
-const PluginPluginAPIVersion = 1
+const ServicePluginAPIVersion = 2
 
-type PluginPlugin struct {
+type ServicePlugin struct {
 	newRuntime   func(context.Context) (wazero.Runtime, error)
 	moduleConfig wazero.ModuleConfig
 }
 
-func NewPluginPlugin(ctx context.Context, opts ...wazeroConfigOption) (*PluginPlugin, error) {
+func NewServicePlugin(ctx context.Context, opts ...wazeroConfigOption) (*ServicePlugin, error) {
 	o := &WazeroConfig{
 		newRuntime:   DefaultWazeroRuntime(),
 		moduleConfig: wazero.NewModuleConfig().WithStartFunctions("_initialize"),
@@ -341,18 +469,18 @@ func NewPluginPlugin(ctx context.Context, opts ...wazeroConfigOption) (*PluginPl
 		opt(o)
 	}
 
-	return &PluginPlugin{
+	return &ServicePlugin{
 		newRuntime:   o.newRuntime,
 		moduleConfig: o.moduleConfig,
 	}, nil
 }
 
-type plugin interface {
+type service interface {
 	Close(ctx context.Context) error
-	Plugin
+	Service
 }
 
-func (p *PluginPlugin) Load(ctx context.Context, pluginPath string, hostFunctions Host) (plugin, error) {
+func (p *ServicePlugin) Load(ctx context.Context, pluginPath string, hostFunctions Host) (service, error) {
 	b, err := os.ReadFile(pluginPath)
 	if err != nil {
 		return nil, err
@@ -389,35 +517,35 @@ func (p *PluginPlugin) Load(ctx context.Context, pluginPath string, hostFunction
 	}
 
 	// Compare API versions with the loading plugin
-	apiVersion := module.ExportedFunction("plugin_api_version")
+	apiVersion := module.ExportedFunction("service_api_version")
 	if apiVersion == nil {
-		return nil, errors.New("plugin_api_version is not exported")
+		return nil, errors.New("service_api_version is not exported")
 	}
 	results, err := apiVersion.Call(ctx)
 	if err != nil {
 		return nil, err
 	} else if len(results) != 1 {
-		return nil, errors.New("invalid plugin_api_version signature")
+		return nil, errors.New("invalid service_api_version signature")
 	}
-	if results[0] != PluginPluginAPIVersion {
-		return nil, fmt.Errorf("API version mismatch, host: %d, plugin: %d", PluginPluginAPIVersion, results[0])
+	if results[0] != ServicePluginAPIVersion {
+		return nil, fmt.Errorf("API version mismatch, host: %d, plugin: %d", ServicePluginAPIVersion, results[0])
 	}
 
-	register := module.ExportedFunction("plugin_register")
+	register := module.ExportedFunction("service_register")
 	if register == nil {
-		return nil, errors.New("plugin_register is not exported")
+		return nil, errors.New("service_register is not exported")
 	}
-	handlehttp := module.ExportedFunction("plugin_handle_http")
+	handlehttp := module.ExportedFunction("service_handle_http")
 	if handlehttp == nil {
-		return nil, errors.New("plugin_handle_http is not exported")
+		return nil, errors.New("service_handle_http is not exported")
 	}
-	handlesocketevent := module.ExportedFunction("plugin_handle_socket_event")
+	handlesocketevent := module.ExportedFunction("service_handle_socket_event")
 	if handlesocketevent == nil {
-		return nil, errors.New("plugin_handle_socket_event is not exported")
+		return nil, errors.New("service_handle_socket_event is not exported")
 	}
-	handlepluginmessage := module.ExportedFunction("plugin_handle_plugin_message")
-	if handlepluginmessage == nil {
-		return nil, errors.New("plugin_handle_plugin_message is not exported")
+	handleservicemessage := module.ExportedFunction("service_handle_service_message")
+	if handleservicemessage == nil {
+		return nil, errors.New("service_handle_service_message is not exported")
 	}
 
 	malloc := module.ExportedFunction("malloc")
@@ -429,37 +557,37 @@ func (p *PluginPlugin) Load(ctx context.Context, pluginPath string, hostFunction
 	if free == nil {
 		return nil, errors.New("free is not exported")
 	}
-	return &pluginPlugin{
-		runtime:             r,
-		module:              module,
-		malloc:              malloc,
-		free:                free,
-		register:            register,
-		handlehttp:          handlehttp,
-		handlesocketevent:   handlesocketevent,
-		handlepluginmessage: handlepluginmessage,
+	return &servicePlugin{
+		runtime:              r,
+		module:               module,
+		malloc:               malloc,
+		free:                 free,
+		register:             register,
+		handlehttp:           handlehttp,
+		handlesocketevent:    handlesocketevent,
+		handleservicemessage: handleservicemessage,
 	}, nil
 }
 
-func (p *pluginPlugin) Close(ctx context.Context) (err error) {
+func (p *servicePlugin) Close(ctx context.Context) (err error) {
 	if r := p.runtime; r != nil {
 		r.Close(ctx)
 	}
 	return
 }
 
-type pluginPlugin struct {
-	runtime             wazero.Runtime
-	module              api.Module
-	malloc              api.Function
-	free                api.Function
-	register            api.Function
-	handlehttp          api.Function
-	handlesocketevent   api.Function
-	handlepluginmessage api.Function
+type servicePlugin struct {
+	runtime              wazero.Runtime
+	module               api.Module
+	malloc               api.Function
+	free                 api.Function
+	register             api.Function
+	handlehttp           api.Function
+	handlesocketevent    api.Function
+	handleservicemessage api.Function
 }
 
-func (p *pluginPlugin) Register(ctx context.Context, request *RegisterRequest) (*RegisterReply, error) {
+func (p *servicePlugin) Register(ctx context.Context, request *RegisterRequest) (*RegisterReply, error) {
 	data, err := request.MarshalVT()
 	if err != nil {
 		return nil, err
@@ -520,7 +648,7 @@ func (p *pluginPlugin) Register(ctx context.Context, request *RegisterRequest) (
 
 	return response, nil
 }
-func (p *pluginPlugin) HandleHTTP(ctx context.Context, request *HTTPRequest) (*HTTPResponse, error) {
+func (p *servicePlugin) HandleHTTP(ctx context.Context, request *HTTPRequest) (*HTTPResponse, error) {
 	data, err := request.MarshalVT()
 	if err != nil {
 		return nil, err
@@ -581,7 +709,7 @@ func (p *pluginPlugin) HandleHTTP(ctx context.Context, request *HTTPRequest) (*H
 
 	return response, nil
 }
-func (p *pluginPlugin) HandleSocketEvent(ctx context.Context, request *SocketEvent) (*SocketEventReply, error) {
+func (p *servicePlugin) HandleSocketEvent(ctx context.Context, request *SocketEvent) (*SocketEventReply, error) {
 	data, err := request.MarshalVT()
 	if err != nil {
 		return nil, err
@@ -642,7 +770,7 @@ func (p *pluginPlugin) HandleSocketEvent(ctx context.Context, request *SocketEve
 
 	return response, nil
 }
-func (p *pluginPlugin) HandlePluginMessage(ctx context.Context, request *PluginMessage) (*PluginMessageReply, error) {
+func (p *servicePlugin) HandleServiceMessage(ctx context.Context, request *ServiceMessage) (*ServiceMessageReply, error) {
 	data, err := request.MarshalVT()
 	if err != nil {
 		return nil, err
@@ -667,7 +795,7 @@ func (p *pluginPlugin) HandlePluginMessage(ctx context.Context, request *PluginM
 		}
 	}
 
-	ptrSize, err := p.handlepluginmessage.Call(ctx, dataPtr, dataSize)
+	ptrSize, err := p.handleservicemessage.Call(ctx, dataPtr, dataSize)
 	if err != nil {
 		return nil, err
 	}
@@ -696,7 +824,7 @@ func (p *pluginPlugin) HandlePluginMessage(ctx context.Context, request *PluginM
 		return nil, errors.New(string(bytes))
 	}
 
-	response := new(PluginMessageReply)
+	response := new(ServiceMessageReply)
 	if err = response.UnmarshalVT(bytes); err != nil {
 		return nil, err
 	}

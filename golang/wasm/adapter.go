@@ -1,327 +1,311 @@
+// Package wasm adapts the framework-neutral Arupa SDK to the generated WASM
+// Service v2 protocol.
 package wasm
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
+	"sync"
 
 	"github.com/SteelDrEgg/arupa-sdk/golang"
-	pluginv1 "github.com/SteelDrEgg/arupa-sdk/golang/gen/wasm/proto"
+	servicev2 "github.com/SteelDrEgg/arupa-sdk/golang/gen/wasm/proto"
 )
 
-// RegistrationReply converts an SDK registration declaration to the generated
-// WASM protocol response.
-func RegistrationReply(registration arupa.Registration) (*pluginv1.RegisterReply, error) {
-	return registrationBinding.RegistrationReply(registration)
+// Service implements the four Service v2 callbacks for a WASI module.
+//
+// Host capabilities become available before OnRegister runs. This lets the
+// hook inspect current Params, register transports and routes, and perform any
+// other host-backed startup work.
+type Service struct {
+	Info       arupa.ServiceInfo
+	Handler    http.Handler
+	Events     *arupa.SocketListener
+	Messages   *arupa.ServiceMessageListener
+	OnRegister arupa.RegisterHook
+
+	registerMu  sync.Mutex
+	registered  bool
+	hostFactory func() servicev2.Host
+	host        hostState
+	initial     arupa.RegisterSnapshot
 }
 
-// ServeHTTP converts generated WASM protocol values at the boundary and uses
-// the shared framework-neutral HTTP adapter for all handler invocation.
-func ServeHTTP(ctx context.Context, request *pluginv1.HTTPRequest, handler http.Handler) (*pluginv1.HTTPResponse, error) {
-	return httpBinding.ServeHTTP(ctx, request, handler)
-}
+var _ servicev2.Service = (*Service)(nil)
+var _ arupa.HostClient = (*Service)(nil)
 
-// Plugin is an optional WASM Plugin implementation around a normal
-// http.Handler. It adds no framework routing.
-type Plugin struct {
-	Registration arupa.Registration
-	Handler      http.Handler
-	Events       *arupa.SocketListener
-	Messages     *arupa.MessageListener
-	// OnRegister runs after host callbacks and InitialParams are ready. An
-	// error returned by the hook rejects registration.
-	OnRegister    arupa.RegisterHook
-	sender        arupa.MessageSender
-	kvClient      arupa.KVClient
-	paramsClient  paramsClient
-	initialParams arupa.ParamsSnapshot
-	logger        arupa.Logger
-}
+// Register prepares the Host client and registration snapshot before invoking
+// OnRegister, then returns this service's stable identity.
+func (s *Service) Register(ctx context.Context, request *servicev2.RegisterRequest) (*servicev2.RegisterReply, error) {
+	if s == nil {
+		return nil, fmt.Errorf("arupa/wasm: service is nil")
+	}
+	s.registerMu.Lock()
+	defer s.registerMu.Unlock()
+	if s.registered {
+		return nil, fmt.Errorf("arupa/wasm: service is already registered")
+	}
 
-var _ pluginv1.Plugin = (*Plugin)(nil)
-var _ arupa.ParamsClient = (*Plugin)(nil)
-var _ arupa.Logger = (*Plugin)(nil)
-
-type paramsClient interface {
-	GetParams(context.Context) (map[string]string, error)
-	PatchParams(context.Context, arupa.ParamsPatch) error
-}
-
-func (p *Plugin) Register(ctx context.Context, request *pluginv1.RegisterRequest) (*pluginv1.RegisterReply, error) {
 	if request == nil {
 		return nil, fmt.Errorf("arupa/wasm: register request is nil")
 	}
-	reply, err := RegistrationReply(p.Registration)
+	if err := s.Info.Validate(); err != nil {
+		return nil, err
+	}
+
+	registerContext, err := registerContextFromProto(request)
 	if err != nil {
 		return nil, err
 	}
-	p.sender = platformMessageSender()
-	p.kvClient = platformKVClient()
-	p.paramsClient = platformParamsClient()
-	p.logger = platformLogger()
-	p.initialParams.Store(request.GetParams())
-	if p.OnRegister != nil {
-		if err := p.OnRegister(ctx); err != nil {
+	if err := registerContext.Validate(); err != nil {
+		return nil, err
+	}
+
+	factory := s.hostFactory
+	if factory == nil {
+		factory = platformHostClient
+	}
+	nextHost := newHost(factory())
+	if err := nextHost.available(); err != nil {
+		return nil, err
+	}
+	s.host.replace(nextHost)
+
+	s.initial.Store(registerContext)
+	if s.OnRegister != nil {
+		if err := s.OnRegister(callContext(ctx)); err != nil {
+			s.host.clear()
+			s.initial.Store(arupa.RegisterContext{})
 			return nil, fmt.Errorf("arupa/wasm: on register: %w", err)
 		}
 	}
-	return reply, nil
+
+	s.registered = true
+	return serviceInfoReply(s.Info), nil
 }
 
-func (p *Plugin) HandleHTTP(ctx context.Context, request *pluginv1.HTTPRequest) (*pluginv1.HTTPResponse, error) {
-	return ServeHTTP(ctx, request, p.Handler)
-}
-
-var httpBinding = arupa.HTTPBinding[pluginv1.HTTPRequest, pluginv1.HTTPResponse]{
-	Request:  requestFromProto,
-	Response: responseToProto,
-}
-
-var socketBinding = arupa.SocketBinding[pluginv1.SocketEvent, pluginv1.SocketEventReply]{
-	Event: socketEventFromProto,
-	Reply: socketReplyToProto,
-}
-
-// HandleSocketEvent converts generated WASM event values at the boundary and
-// dispatches them through the shared event listener registry.
-func HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent, events *arupa.SocketListener) (*pluginv1.SocketEventReply, error) {
-	return socketBinding.HandleSocketEvent(ctx, event, events)
-}
-
-var registrationBinding = arupa.RegistrationBinding[pluginv1.HTTPRoute, pluginv1.SocketNamespace, pluginv1.StaticMount, pluginv1.RegisterReply]{
-	Route: func(route arupa.HTTPRoute) *pluginv1.HTTPRoute {
-		return &pluginv1.HTTPRoute{Method: route.Method, Pattern: route.Pattern, Access: accessPolicy(route.Access)}
-	},
-	Namespace: func(namespace arupa.SocketNamespace) *pluginv1.SocketNamespace {
-		eventAccess := make(map[string]*pluginv1.AccessPolicy, len(namespace.EventAccess))
-		for event, policy := range namespace.EventAccess {
-			eventAccess[event] = accessPolicy(policy)
-		}
-		return &pluginv1.SocketNamespace{Name: namespace.Name, Events: append([]string(nil), namespace.Events...), Access: accessPolicy(namespace.Access), EventAccess: eventAccess}
-	},
-	Mount: func(mount arupa.StaticMount) *pluginv1.StaticMount {
-		return &pluginv1.StaticMount{Prefix: mount.Prefix, Directory: mount.Directory, Access: accessPolicy(mount.Access)}
-	},
-	Reply: func(name, version string, routes []*pluginv1.HTTPRoute, namespaces []*pluginv1.SocketNamespace, mounts []*pluginv1.StaticMount) *pluginv1.RegisterReply {
-		return &pluginv1.RegisterReply{Name: name, Version: version, HttpRoutes: routes, SocketNamespaces: namespaces, StaticMounts: mounts}
-	},
-}
-
-// HandleSocketEvent dispatches a host-forwarded event to registered listeners.
-func (p *Plugin) HandleSocketEvent(ctx context.Context, event *pluginv1.SocketEvent) (*pluginv1.SocketEventReply, error) {
-	return HandleSocketEvent(ctx, event, p.Events)
-}
-
-// HandlePluginMessage dispatches a host-forwarded plugin message to the
-// registered message listener.
-func (p *Plugin) HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage) (*pluginv1.PluginMessageReply, error) {
-	return HandlePluginMessage(ctx, message, p.Messages)
-}
-
-// SendMessage sends a request/reply message to another registered plugin.
-func (p *Plugin) SendMessage(ctx context.Context, message arupa.OutgoingMessage) (string, error) {
-	if p.sender == nil {
-		return "", fmt.Errorf("arupa/wasm: host messaging is unavailable before registration")
+// InitialRegisterContext returns an independent copy of the accepted
+// registration request.
+func (s *Service) InitialRegisterContext() arupa.RegisterContext {
+	if s == nil {
+		return arupa.RegisterContext{}
 	}
-	return p.sender.SendMessage(ctx, message)
+	return s.initial.Load()
 }
 
-// SendJSON encodes payload as JSON, then delegates to SendMessage.
-func (p *Plugin) SendJSON(ctx context.Context, target, topic string, payload any) (string, error) {
-	return arupa.SendJSON(ctx, p, target, topic, payload)
+// InitialParams returns a copy of the Params received during registration.
+func (s *Service) InitialParams() map[string]string {
+	return arupa.CloneParams(s.InitialRegisterContext().Params)
 }
 
-// KV returns a KV store scoped to this plugin's registered name.
-func (p *Plugin) KV() arupa.KVStore {
-	if p == nil {
-		return arupa.NewKVStore(nil, "")
+// HandleHTTP adapts a host-forwarded HTTP request to Handler.
+func (s *Service) HandleHTTP(ctx context.Context, request *servicev2.HTTPRequest) (*servicev2.HTTPResponse, error) {
+	if s == nil {
+		return nil, fmt.Errorf("arupa/wasm: service is nil")
 	}
-	return arupa.NewKVStore(p, p.Registration.Name)
+	return ServeHTTP(ctx, request, s.Handler)
 }
 
-// KVGet reads a value from a non-empty host KV namespace.
-func (p *Plugin) KVGet(ctx context.Context, namespace, key string) ([]byte, bool, error) {
-	if err := validateKVRequest(namespace, key); err != nil {
-		return nil, false, err
+// HandleSocketEvent dispatches a host-forwarded Socket.IO event.
+func (s *Service) HandleSocketEvent(ctx context.Context, event *servicev2.SocketEvent) (*servicev2.SocketEventReply, error) {
+	if s == nil {
+		return nil, fmt.Errorf("arupa/wasm: service is nil")
 	}
-	if p == nil || p.kvClient == nil {
-		return nil, false, fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
-	}
-	return p.kvClient.KVGet(ctx, namespace, key)
+	return HandleSocketEvent(ctx, event, s.Events)
 }
 
-// KVSet writes a value to a non-empty host KV namespace.
-func (p *Plugin) KVSet(ctx context.Context, namespace, key string, value []byte) error {
-	if err := validateKVRequest(namespace, key); err != nil {
-		return err
+// HandleServiceMessage dispatches a host-forwarded service message.
+func (s *Service) HandleServiceMessage(ctx context.Context, message *servicev2.ServiceMessage) (*servicev2.ServiceMessageReply, error) {
+	if s == nil {
+		return nil, fmt.Errorf("arupa/wasm: service is nil")
 	}
-	if p == nil || p.kvClient == nil {
-		return fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
-	}
-	return p.kvClient.KVSet(ctx, namespace, key, value)
+	return HandleServiceMessage(ctx, message, s.Messages)
 }
 
-// KVDelete removes a key from a non-empty host KV namespace.
-func (p *Plugin) KVDelete(ctx context.Context, namespace, key string) error {
-	if err := validateKVRequest(namespace, key); err != nil {
-		return err
+// ServeHTTP converts generated WASM protocol values at the boundary and uses
+// the shared framework-neutral HTTP adapter for handler invocation.
+func ServeHTTP(ctx context.Context, request *servicev2.HTTPRequest, handler http.Handler) (*servicev2.HTTPResponse, error) {
+	if request == nil {
+		return nil, fmt.Errorf("arupa/wasm: http request is nil")
 	}
-	if p == nil || p.kvClient == nil {
-		return fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
-	}
-	return p.kvClient.KVDelete(ctx, namespace, key)
-}
-
-// KVList returns the keys in a non-empty host KV namespace.
-func (p *Plugin) KVList(ctx context.Context, namespace string) ([]string, error) {
-	if namespace == "" {
-		return nil, fmt.Errorf("arupa: kv namespace is required")
-	}
-	if p == nil || p.kvClient == nil {
-		return nil, fmt.Errorf("arupa/wasm: host KV is unavailable before registration")
-	}
-	return p.kvClient.KVList(ctx, namespace)
-}
-
-// InitialParams returns the Params received during the most recent Register.
-func (p *Plugin) InitialParams() map[string]string {
-	if p == nil {
-		return map[string]string{}
-	}
-	return p.initialParams.Load()
-}
-
-// Params reads the current effective Params from the host.
-func (p *Plugin) Params(ctx context.Context) (map[string]string, error) {
-	if p == nil || p.paramsClient == nil {
-		return nil, fmt.Errorf("arupa/wasm: host Params are unavailable before registration")
-	}
-	return p.paramsClient.GetParams(ctx)
-}
-
-// PatchParams applies a partial update to this plugin's persisted Params.
-func (p *Plugin) PatchParams(ctx context.Context, patch arupa.ParamsPatch) error {
-	if p == nil || p.paramsClient == nil {
-		return fmt.Errorf("arupa/wasm: host Params are unavailable before registration")
-	}
-	return p.paramsClient.PatchParams(ctx, patch)
-}
-
-// Log writes a host-owned plugin log record at level.
-func (p *Plugin) Log(ctx context.Context, level arupa.LogLevel, message string) error {
-	if p == nil || p.logger == nil {
-		return fmt.Errorf("arupa/wasm: host logging is unavailable before registration")
-	}
-	level, err := arupa.NormalizeLogLevel(level)
+	response, err := arupa.ServeHTTP(ctx, requestFromProto(request), handler)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return p.logger.Log(ctx, level, message)
+	return responseToProto(response), nil
 }
 
-// Debug writes a debug-level plugin log record.
-func (p *Plugin) Debug(ctx context.Context, message string) error {
-	return p.Log(ctx, arupa.LogDebug, message)
+// HandleSocketEvent converts a generated event and dispatches it through the
+// shared listener.
+func HandleSocketEvent(ctx context.Context, event *servicev2.SocketEvent, listener *arupa.SocketListener) (*servicev2.SocketEventReply, error) {
+	if event == nil {
+		return nil, fmt.Errorf("arupa/wasm: socket event is nil")
+	}
+	emits, err := listener.Handle(ctx, socketEventFromProto(event))
+	if err != nil {
+		return nil, err
+	}
+	return socketReplyToProto(emits), nil
 }
 
-// Info writes an info-level plugin log record.
-func (p *Plugin) Info(ctx context.Context, message string) error {
-	return p.Log(ctx, arupa.LogInfo, message)
+// HandleServiceMessage converts a generated message and dispatches it through
+// the shared listener.
+func HandleServiceMessage(ctx context.Context, message *servicev2.ServiceMessage, listener *arupa.ServiceMessageListener) (*servicev2.ServiceMessageReply, error) {
+	if message == nil {
+		return nil, fmt.Errorf("arupa/wasm: service message is nil")
+	}
+	reply, err := listener.Handle(ctx, serviceMessageFromProto(message))
+	if err != nil {
+		return &servicev2.ServiceMessageReply{Error: err.Error()}, nil
+	}
+	return &servicev2.ServiceMessageReply{Message: reply}, nil
 }
 
-// Warn writes a warning-level plugin log record.
-func (p *Plugin) Warn(ctx context.Context, message string) error {
-	return p.Log(ctx, arupa.LogWarn, message)
+func serviceInfoReply(info arupa.ServiceInfo) *servicev2.RegisterReply {
+	return &servicev2.RegisterReply{Name: info.Name, Version: info.Version}
 }
 
-// Error writes an error-level plugin log record.
-func (p *Plugin) Error(ctx context.Context, message string) error {
-	return p.Log(ctx, arupa.LogError, message)
+func registerContextFromProto(request *servicev2.RegisterRequest) (arupa.RegisterContext, error) {
+	if request == nil {
+		return arupa.RegisterContext{}, fmt.Errorf("arupa/wasm: register request is nil")
+	}
+	listeners := make([]arupa.InheritedListener, 0, len(request.GetListeners()))
+	for index, listener := range request.GetListeners() {
+		if listener == nil {
+			return arupa.RegisterContext{}, fmt.Errorf("arupa/wasm: inherited listener %d is nil", index)
+		}
+		listeners = append(listeners, arupa.InheritedListener{
+			ID:      strings.TrimSpace(listener.GetId()),
+			FD:      listener.GetFd(),
+			Network: strings.TrimSpace(listener.GetNetwork()),
+			Address: listener.GetAddress(),
+		})
+	}
+	return arupa.RegisterContext{
+		InstanceID: strings.TrimSpace(request.GetInstanceId()),
+		Params:     arupa.CloneParams(request.GetParams()),
+		Listeners:  listeners,
+	}, nil
 }
 
-func requestFromProto(request *pluginv1.HTTPRequest) arupa.HTTPRequest {
+func requestFromProto(request *servicev2.HTTPRequest) arupa.HTTPRequest {
 	if request == nil {
 		return arupa.HTTPRequest{}
 	}
-	var user *arupa.User
-	if source := request.GetUser(); source != nil {
-		user = &arupa.User{Username: source.GetUsername(), Groups: append([]string(nil), source.GetGroups()...)}
-	}
-	headers := make(http.Header, len(request.GetHeaders()))
-	for key, value := range request.GetHeaders() {
-		headers.Set(key, value)
-	}
 	return arupa.HTTPRequest{
-		Method:     request.GetMethod(),
-		Path:       request.GetPath(),
-		Query:      request.GetQuery(),
-		Headers:    headers,
-		Body:       request.GetBody(),
-		RemoteAddr: request.GetRemoteAddr(),
-		User:       user,
+		RouteID:      request.GetRouteId(),
+		RoutePattern: request.GetRoutePattern(),
+		Method:       request.GetMethod(),
+		Path:         request.GetPath(),
+		Query:        request.GetQuery(),
+		Headers:      headersFromProto(request.GetHeaders()),
+		Body:         append([]byte(nil), request.GetBody()...),
+		RemoteAddr:   request.GetRemoteAddr(),
+		User:         userFromProto(request.GetUser()),
 	}
 }
 
-func responseToProto(response arupa.HTTPResponse) *pluginv1.HTTPResponse {
-	headers := make(map[string]string, len(response.Headers))
-	for key, values := range response.Headers {
-		if len(values) > 0 {
-			headers[key] = values[0]
+func responseToProto(response arupa.HTTPResponse) *servicev2.HTTPResponse {
+	return &servicev2.HTTPResponse{
+		Status:  int32(response.Status),
+		Headers: headersToProto(response.Headers),
+		Body:    append([]byte(nil), response.Body...),
+	}
+}
+
+func headersFromProto(headers []*servicev2.Header) http.Header {
+	out := make(http.Header)
+	for _, header := range headers {
+		if header == nil || header.GetName() == "" {
+			continue
 		}
+		name := http.CanonicalHeaderKey(header.GetName())
+		values := append([]string(nil), header.GetValues()...)
+		out[name] = append(out[name], values...)
 	}
-	return &pluginv1.HTTPResponse{Status: int32(response.Status), Headers: headers, Body: response.Body}
+	return out
 }
 
-func socketEventFromProto(event *pluginv1.SocketEvent) arupa.SocketEvent {
-	var user *arupa.User
-	if source := event.GetUser(); source != nil {
-		user = &arupa.User{Username: source.GetUsername(), Groups: append([]string(nil), source.GetGroups()...)}
+func headersToProto(headers http.Header) []*servicev2.Header {
+	if len(headers) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(headers))
+	for name := range headers {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	out := make([]*servicev2.Header, 0, len(names))
+	for _, name := range names {
+		out = append(out, &servicev2.Header{
+			Name:   name,
+			Values: append([]string(nil), headers[name]...),
+		})
+	}
+	return out
+}
+
+func userFromProto(source *servicev2.User) *arupa.User {
+	if source == nil {
+		return nil
+	}
+	return &arupa.User{
+		Username: source.GetUsername(),
+		Groups:   append([]string(nil), source.GetGroups()...),
+	}
+}
+
+func socketEventFromProto(event *servicev2.SocketEvent) arupa.SocketEvent {
+	if event == nil {
+		return arupa.SocketEvent{}
 	}
 	return arupa.SocketEvent{
+		RouteID:   event.GetRouteId(),
 		Namespace: event.GetNamespace(),
 		Event:     event.GetEvent(),
 		SocketID:  event.GetSocketId(),
-		User:      user,
+		User:      userFromProto(event.GetUser()),
 		Payload:   append([]byte(nil), event.GetPayload()...),
 	}
 }
 
-func socketReplyToProto(emits []arupa.EmitInstruction) *pluginv1.SocketEventReply {
-	reply := &pluginv1.SocketEventReply{Emits: make([]*pluginv1.EmitInstruction, 0, len(emits))}
+func socketReplyToProto(emits []arupa.EmitInstruction) *servicev2.SocketEventReply {
+	reply := &servicev2.SocketEventReply{
+		Emits: make([]*servicev2.EmitInstruction, 0, len(emits)),
+	}
 	for _, emit := range emits {
-		reply.Emits = append(reply.Emits, &pluginv1.EmitInstruction{
-			Namespace: emit.Namespace,
-			Target:    emit.Target,
-			Event:     emit.Event,
-			Payload:   append([]byte(nil), emit.Payload...),
-		})
+		reply.Emits = append(reply.Emits, emitToProto(emit))
 	}
 	return reply
 }
 
-var messageBinding = arupa.MessageBinding[pluginv1.PluginMessage, pluginv1.PluginMessageReply]{
-	Message: messageFromProto,
-	Reply:   messageReplyToProto,
-}
-
-// HandlePluginMessage converts generated WASM values at the boundary and
-// dispatches them through the shared message listener.
-func HandlePluginMessage(ctx context.Context, message *pluginv1.PluginMessage, listener *arupa.MessageListener) (*pluginv1.PluginMessageReply, error) {
-	return messageBinding.HandlePluginMessage(ctx, message, listener)
-}
-
-func messageFromProto(message *pluginv1.PluginMessage) arupa.IncomingMessage {
-	return arupa.IncomingMessage{
+func serviceMessageFromProto(message *servicev2.ServiceMessage) arupa.IncomingServiceMessage {
+	if message == nil {
+		return arupa.IncomingServiceMessage{}
+	}
+	return arupa.IncomingServiceMessage{
 		Source:  message.GetSource(),
+		Target:  message.GetTarget(),
 		Topic:   message.GetTopic(),
 		Payload: append([]byte(nil), message.GetPayload()...),
 	}
 }
 
-func messageReplyToProto(reply string) *pluginv1.PluginMessageReply {
-	return &pluginv1.PluginMessageReply{Message: reply}
+func emitToProto(emit arupa.EmitInstruction) *servicev2.EmitInstruction {
+	return &servicev2.EmitInstruction{
+		Namespace: emit.Namespace,
+		Target:    emit.Target,
+		Event:     emit.Event,
+		Payload:   append([]byte(nil), emit.Payload...),
+	}
 }
 
-func accessPolicy(policy arupa.AccessPolicy) *pluginv1.AccessPolicy {
-	return &pluginv1.AccessPolicy{RequireAuth: policy.RequireAuth, Groups: append([]string(nil), policy.Groups...)}
+func accessPolicyToProto(policy arupa.AccessPolicy) *servicev2.AccessPolicy {
+	return &servicev2.AccessPolicy{
+		RequireAuth: policy.RequireAuth,
+		Groups:      append([]string(nil), policy.Groups...),
+	}
 }

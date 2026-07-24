@@ -16,6 +16,7 @@ type User struct {
 // SocketEvent is the framework-neutral representation of a host-forwarded
 // Socket.IO event. Payload is the JSON-encoded array of event arguments.
 type SocketEvent struct {
+	RouteID   string
 	Namespace string
 	Event     string
 	SocketID  string
@@ -41,7 +42,7 @@ type Emitter interface {
 type EventHandler func(context.Context, SocketEvent, Emitter) error
 
 // SocketListener is a small, concurrency-safe event listener registry. It is not a
-// Socket.IO router: the host has already selected the plugin and all namespace
+// Socket.IO router: the host has already selected the service and all namespace
 // and event policy checks have already happened before Handle is called.
 type SocketListener struct {
 	mu       sync.RWMutex
@@ -56,6 +57,9 @@ func NewSocketListener() *SocketListener {
 
 // On registers handler for a Socket.IO event name.
 func (b *SocketListener) On(event string, handler EventHandler) error {
+	if b == nil {
+		return fmt.Errorf("arupa: event bus is nil")
+	}
 	if event == "" {
 		return fmt.Errorf("arupa: socket event name is required")
 	}
@@ -63,13 +67,19 @@ func (b *SocketListener) On(event string, handler EventHandler) error {
 		return fmt.Errorf("arupa: socket event handler is nil")
 	}
 	b.mu.Lock()
+	if b.handlers == nil {
+		b.handlers = make(map[string][]EventHandler)
+	}
 	b.handlers[event] = append(b.handlers[event], handler)
 	b.mu.Unlock()
 	return nil
 }
 
-// OnAny registers handler for every event received by the plugin.
+// OnAny registers handler for every event received by the service.
 func (b *SocketListener) OnAny(handler EventHandler) error {
+	if b == nil {
+		return fmt.Errorf("arupa: event bus is nil")
+	}
 	if handler == nil {
 		return fmt.Errorf("arupa: socket event handler is nil")
 	}
@@ -152,5 +162,10 @@ func (e *replyEmitter) Emit(instruction EmitInstruction) error {
 func (e *replyEmitter) instructions() []EmitInstruction {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	return append([]EmitInstruction(nil), e.emits...)
+	instructions := make([]EmitInstruction, len(e.emits))
+	for i, instruction := range e.emits {
+		instructions[i] = instruction
+		instructions[i].Payload = append([]byte(nil), instruction.Payload...)
+	}
+	return instructions
 }

@@ -6,13 +6,13 @@ import (
 )
 
 // ParamsPatch applies independent additions, replacements, and deletions to a
-// plugin's persisted Params override. A key present in both fields is set.
+// service's persisted Params override. A key present in both fields is set.
 type ParamsPatch struct {
 	Set    map[string]string
 	Delete []string
 }
 
-// ParamsClient reads and updates the current Params for the calling plugin.
+// ParamsClient reads and updates the current Params for the calling service.
 // The host determines the caller identity from the authenticated callback.
 type ParamsClient interface {
 	Params(context.Context) (map[string]string, error)
@@ -24,11 +24,11 @@ func CloneParams(params map[string]string) map[string]string {
 	if len(params) == 0 {
 		return map[string]string{}
 	}
-	copy := make(map[string]string, len(params))
+	cloned := make(map[string]string, len(params))
 	for key, value := range params {
-		copy[key] = value
+		cloned[key] = value
 	}
-	return copy
+	return cloned
 }
 
 // ParamsSnapshot stores a concurrency-safe copy of the Params received at
