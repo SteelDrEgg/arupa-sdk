@@ -29,9 +29,9 @@ const (
 // ProxyTarget describes a native HTTP upstream. An inherited target uses
 // Address as the inherited listener ID; an empty value selects "proxy".
 type ProxyTarget struct {
-	Network ProxyNetwork
-	Address string
-	Scheme  string
+	Network ProxyNetwork `json:"network"`
+	Address string       `json:"address,omitempty"`
+	Scheme  string       `json:"scheme,omitempty"`
 }
 
 // Validate verifies the transport-independent proxy declaration.
@@ -65,10 +65,10 @@ func (p ProxyTarget) Validate() error {
 
 // Transport declares one service-owned traffic backend.
 type Transport struct {
-	ID           string
-	Type         TransportType
-	StaticSource string
-	Proxy        *ProxyTarget
+	ID           string        `json:"id"`
+	Type         TransportType `json:"type"`
+	StaticSource string        `json:"source,omitempty"`
+	Proxy        *ProxyTarget  `json:"proxy,omitempty"`
 }
 
 // Validate verifies a transport declaration before it is sent to the host.
@@ -115,31 +115,31 @@ func (t Transport) Validate() error {
 
 // AccessPolicy is the host-side authorization policy for an ingress route.
 type AccessPolicy struct {
-	RequireAuth bool
-	Groups      []string
+	RequireAuth bool     `json:"require_auth,omitempty"`
+	Groups      []string `json:"groups,omitempty"`
 }
 
 // HTTPRoute declares an HTTP path forwarded through a transport.
 type HTTPRoute struct {
-	Method  string
-	Pattern string
-	Access  AccessPolicy
+	Method  string       `json:"method,omitempty"`
+	Pattern string       `json:"pattern"`
+	Access  AccessPolicy `json:"access,omitempty"`
 }
 
 // SocketIORoute declares a Socket.IO namespace forwarded through a transport.
 type SocketIORoute struct {
-	Namespace   string
-	Events      []string
-	Access      AccessPolicy
-	EventAccess map[string]AccessPolicy
+	Namespace   string                  `json:"namespace"`
+	Events      []string                `json:"events"`
+	Access      AccessPolicy            `json:"access,omitempty"`
+	EventAccess map[string]AccessPolicy `json:"event_access,omitempty"`
 }
 
 // Route binds one HTTP or Socket.IO route to a transport.
 type Route struct {
-	ID          string
-	TransportID string
-	HTTP        *HTTPRoute
-	SocketIO    *SocketIORoute
+	ID          string         `json:"id"`
+	TransportID string         `json:"transport"`
+	HTTP        *HTTPRoute     `json:"http,omitempty"`
+	SocketIO    *SocketIORoute `json:"socket_io,omitempty"`
 }
 
 // Validate verifies the structural route declaration.
