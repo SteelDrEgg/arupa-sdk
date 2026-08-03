@@ -119,10 +119,20 @@ type AccessPolicy struct {
 	Groups      []string `json:"groups,omitempty"`
 }
 
+// RewriteRule controls route-relative HTTP request and response rewriting.
+// Both options default to false. Location requires Prefix.
+type RewriteRule struct {
+	// Prefix removes the matched route prefix before dispatching the request.
+	Prefix bool `json:"prefix,omitempty"`
+	// Location prepends the removed prefix to root-relative Location headers.
+	Location bool `json:"location,omitempty"`
+}
+
 // HTTPRoute declares an HTTP path forwarded through a transport.
 type HTTPRoute struct {
 	Method  string       `json:"method,omitempty"`
 	Pattern string       `json:"pattern"`
+	Rewrite RewriteRule  `json:"rewrite,omitempty"`
 	Access  AccessPolicy `json:"access,omitempty"`
 }
 
@@ -153,8 +163,13 @@ func (r Route) Validate() error {
 	if (r.HTTP == nil) == (r.SocketIO == nil) {
 		return fmt.Errorf("arupa: route %q must declare exactly one route kind", r.ID)
 	}
-	if r.HTTP != nil && strings.TrimSpace(r.HTTP.Pattern) == "" {
-		return fmt.Errorf("arupa: http route %q pattern is required", r.ID)
+	if r.HTTP != nil {
+		if strings.TrimSpace(r.HTTP.Pattern) == "" {
+			return fmt.Errorf("arupa: http route %q pattern is required", r.ID)
+		}
+		if r.HTTP.Rewrite.Location && !r.HTTP.Rewrite.Prefix {
+			return fmt.Errorf("arupa: http route %q location rewrite requires prefix rewrite", r.ID)
+		}
 	}
 	if r.SocketIO != nil {
 		if strings.TrimSpace(r.SocketIO.Namespace) == "" {

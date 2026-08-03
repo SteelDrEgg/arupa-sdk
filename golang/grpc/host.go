@@ -496,6 +496,7 @@ func routeToProto(route arupa.Route) (*servicev2.Route, error) {
 		out.Route = &servicev2.Route_Http{Http: &servicev2.HTTPRoute{
 			Method:  route.HTTP.Method,
 			Pattern: route.HTTP.Pattern,
+			Rewrite: rewriteToProto(route.HTTP.Rewrite),
 			Access:  accessPolicyToProto(route.HTTP.Access),
 		}}
 	case route.SocketIO != nil:
@@ -513,6 +514,16 @@ func routeToProto(route arupa.Route) (*servicev2.Route, error) {
 		return nil, fmt.Errorf("route %q has no route configuration", route.ID)
 	}
 	return out, nil
+}
+
+func rewriteToProto(rule arupa.RewriteRule) *servicev2.RewriteRule {
+	if rule == (arupa.RewriteRule{}) {
+		return nil
+	}
+	return &servicev2.RewriteRule{
+		Prefix:   rule.Prefix,
+		Location: rule.Location,
+	}
 }
 
 func accessPolicyToProto(policy arupa.AccessPolicy) *servicev2.AccessPolicy {

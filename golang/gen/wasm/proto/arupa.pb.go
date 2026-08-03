@@ -642,6 +642,33 @@ func (*Transport_Static) isTransport_Config() {}
 
 func (*Transport_Proxy) isTransport_Config() {}
 
+type RewriteRule struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Prefix   bool `protobuf:"varint,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Location bool `protobuf:"varint,2,opt,name=location,proto3" json:"location,omitempty"`
+}
+
+func (x *RewriteRule) ProtoReflect() protoreflect.Message {
+	panic(`not implemented`)
+}
+
+func (x *RewriteRule) GetPrefix() bool {
+	if x != nil {
+		return x.Prefix
+	}
+	return false
+}
+
+func (x *RewriteRule) GetLocation() bool {
+	if x != nil {
+		return x.Location
+	}
+	return false
+}
+
 type HTTPRoute struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -650,6 +677,7 @@ type HTTPRoute struct {
 	Method  string        `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
 	Pattern string        `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"`
 	Access  *AccessPolicy `protobuf:"bytes,3,opt,name=access,proto3" json:"access,omitempty"`
+	Rewrite *RewriteRule  `protobuf:"bytes,4,opt,name=rewrite,proto3" json:"rewrite,omitempty"`
 }
 
 func (x *HTTPRoute) ProtoReflect() protoreflect.Message {
@@ -673,6 +701,13 @@ func (x *HTTPRoute) GetPattern() string {
 func (x *HTTPRoute) GetAccess() *AccessPolicy {
 	if x != nil {
 		return x.Access
+	}
+	return nil
+}
+
+func (x *HTTPRoute) GetRewrite() *RewriteRule {
+	if x != nil {
+		return x.Rewrite
 	}
 	return nil
 }

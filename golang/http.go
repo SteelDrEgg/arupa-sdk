@@ -9,6 +9,11 @@ import (
 	"net/url"
 )
 
+// ForwardedPrefixHeader contains the trusted route prefix removed by the
+// kernel when an HTTP route enables prefix rewriting. The kernel removes any
+// caller-supplied value before forwarding the request.
+const ForwardedPrefixHeader = "X-Forwarded-Prefix"
+
 // HTTPRequest is the framework-neutral representation of an incoming request.
 // Protocol bindings convert their generated request type into this structure.
 type HTTPRequest struct {

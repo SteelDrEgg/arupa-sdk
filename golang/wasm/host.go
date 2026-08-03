@@ -559,6 +559,7 @@ func routeToProto(route arupa.Route) (*servicev2.Route, error) {
 			Http: &servicev2.HTTPRoute{
 				Method:  route.HTTP.Method,
 				Pattern: route.HTTP.Pattern,
+				Rewrite: rewriteToProto(route.HTTP.Rewrite),
 				Access:  accessPolicyToProto(route.HTTP.Access),
 			},
 		}
@@ -579,4 +580,14 @@ func routeToProto(route arupa.Route) (*servicev2.Route, error) {
 		return nil, fmt.Errorf("route %q has no configuration", route.ID)
 	}
 	return out, nil
+}
+
+func rewriteToProto(rule arupa.RewriteRule) *servicev2.RewriteRule {
+	if rule == (arupa.RewriteRule{}) {
+		return nil
+	}
+	return &servicev2.RewriteRule{
+		Prefix:   rule.Prefix,
+		Location: rule.Location,
+	}
 }
