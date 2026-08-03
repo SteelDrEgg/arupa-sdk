@@ -121,6 +121,33 @@ Available transport types are:
 - `arupa.TransportProxy`: streams HTTP, WebSocket, or Socket.IO traffic to an
   inherited, Unix, or TCP HTTP listener.
 
+### HTTP route rewriting
+
+Static, HTTP RPC, and proxy routes all preserve the matched route prefix by
+default. Set the route-level rewrite rule when the downstream handler is
+mounted at `/` instead of at the external route prefix:
+
+```go
+HTTP: &arupa.HTTPRoute{
+	Pattern: "/app/",
+	Rewrite: arupa.RewriteRule{
+		Prefix:   true,
+		Location: true,
+	},
+},
+```
+
+With this rule, `/app/users?q=1` is dispatched as `/users?q=1`. The kernel
+sets the trusted `X-Forwarded-Prefix: /app` header for HTTP RPC and proxy
+requests. `Location` makes the kernel rewrite a root-relative downstream
+header such as `Location: /login` to `Location: /app/login`; relative,
+scheme-relative, and absolute locations are unchanged.
+
+Both options are ordinary booleans and default to false. `Location: true`
+requires `Prefix: true`. Static transports have no separate strip-prefix
+setting; the route-level rule is the common mechanism for all three HTTP
+transport types.
+
 `RegistrationResult` preserves partial batch outcomes. A non-nil Go error
 means the Host call failed or a declaration could not be encoded; item-level
 rejections appear in `Registered`, `Failures`, `Degraded`, and `Message`.
@@ -329,7 +356,11 @@ mux.HandleFunc("/api/users/", func(w http.ResponseWriter, r *http.Request) {
 
 The gRPC and WASM adapters preserve all values for every request and response
 header. Use `Header.Values` or direct slice access when repeated values such as
-`Cookie`, `Set-Cookie`, or forwarding metadata matter.
+`Cookie`, `Set-Cookie`, or forwarding metadata matter. When prefix rewriting
+is enabled, read the trusted value with
+`r.Header.Get(arupa.ForwardedPrefixHeader)`. The kernel removes any
+caller-supplied `X-Forwarded-Prefix`; when rewriting is disabled, the header is
+absent.
 
 ## Inherited listener for a native proxy service
 
