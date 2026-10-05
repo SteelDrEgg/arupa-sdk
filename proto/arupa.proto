@@ -37,6 +37,7 @@ message HTTPResponse {
   bytes body = 3;
 }
 
+// Socket will be deprecated in the future
 message SocketEvent {
   string route_id = 1;
   string namespace = 2;
